@@ -1,0 +1,17 @@
+{
+  "name": "ai-dancing",
+  "version": "1.0.0",
+  "description": "AI Dancing - AI Video Generation App",
+  "scripts": {
+    "dev": "concurrently --kill-others-on-fail --kill-others \"npm run dev:backend\" \"npm run dev:frontend\"",
+    "dev:frontend": "cd frontend && npm run dev",
+    "dev:backend": "cd backend && python -m uvicorn main:app --reload --port 8000 --log-level error --no-access-log",
+    "install:all": "cd frontend && npm install && cd ../backend && pip install -r requirements.txt"
+  },
+  "devDependencies": {
+    "concurrently": "^9.2.1"
+  },
+  "dependencies": {
+    "next-auth": "^4.24.13"
+  }
+}

@@ -114,7 +114,7 @@ export default function CreditsPage() {
                 {/* Payment Button */}
                 <button
                   onClick={() => handleQRPayment(pkg)}
-                  className="w-full px-2 sm:px-3 md:px-4 py-2 sm:py-2.5 md:py-3 bg-[#D344FF] text-white rounded-[10px] hover:bg-[#B836E6] transition-all flex items-center justify-center gap-1 sm:gap-2 text-xs sm:text-sm md:text-base font-semibold"
+                  className="w-full px-2 sm:px-3 md:px-4 py-2 sm:py-2.5 md:py-3 bg-[#D344FF] text-black rounded-[10px] hover:bg-[#B836E6] transition-all flex items-center justify-center gap-1 sm:gap-2 text-xs sm:text-sm md:text-base font-semibold"
                 >
                   <QrCode className="w-4 h-4 sm:w-4 sm:h-4 md:w-5 md:h-5" />
                   <span className="truncate">Chuyển Khoản Qua QR</span>
@@ -163,7 +163,7 @@ export default function CreditsPage() {
                 {/* Payment Button */}
                 <button
                   onClick={() => handleQRPayment(pkg)}
-                  className="w-full px-2 sm:px-3 md:px-4 py-2 sm:py-2.5 md:py-3 bg-[#D344FF] text-white rounded-[10px] hover:bg-[#B836E6] transition-all flex items-center justify-center gap-1 sm:gap-2 text-xs sm:text-sm md:text-base font-semibold"
+                  className="w-full px-2 sm:px-3 md:px-4 py-2 sm:py-2.5 md:py-3 bg-[#D344FF] text-black rounded-[10px] hover:bg-[#B836E6] transition-all flex items-center justify-center gap-1 sm:gap-2 text-xs sm:text-sm md:text-base font-semibold"
                 >
                   <QrCode className="w-4 h-4 sm:w-4 sm:h-4 md:w-5 md:h-5" />
                   <span className="truncate">Chuyển Khoản Qua QR</span>

@@ -5,7 +5,7 @@ import { useState, useEffect, useRef } from 'react';
  * Khi server progress = 100, thì hiển thị 100%
  */
 export function useProgressBar(serverProgress: number | null, isGenerating: boolean) {
-  const [progress, setProgress] = useState(0);
+  const [progress, setProgress] = useState(1); // Bắt đầu từ 1%
   const startTimeRef = useRef<number | null>(null);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -13,6 +13,7 @@ export function useProgressBar(serverProgress: number | null, isGenerating: bool
     if (isGenerating && startTimeRef.current === null) {
       // Bắt đầu tính progress
       startTimeRef.current = Date.now();
+      setProgress(1); // Bắt đầu từ 1%
       
       intervalRef.current = setInterval(() => {
         if (startTimeRef.current === null) return;
@@ -21,9 +22,9 @@ export function useProgressBar(serverProgress: number | null, isGenerating: bool
         const fifteenMinutes = 15 * 60; // 15 phút = 900 giây
         
         if (elapsed < fifteenMinutes) {
-          // 0-15 phút: tăng từ 0% đến 99% (dùng hàm logarit để tăng chậm dần)
-          // Sử dụng hàm: 99 * (1 - e^(-elapsed/300)) để tăng chậm dần
-          const calculatedProgress = 99 * (1 - Math.exp(-elapsed / 300));
+          // 1-15 phút: tăng từ 1% đến 99% (dùng hàm logarit để tăng chậm dần)
+          // Sử dụng hàm: 1 + 98 * (1 - e^(-elapsed/300)) để tăng từ 1% đến 99%
+          const calculatedProgress = 1 + 98 * (1 - Math.exp(-elapsed / 300));
           setProgress(Math.min(calculatedProgress, 99));
         } else {
           // Sau 15 phút: giữ ở 99%
@@ -37,7 +38,7 @@ export function useProgressBar(serverProgress: number | null, isGenerating: bool
         intervalRef.current = null;
       }
       startTimeRef.current = null;
-      setProgress(0);
+      setProgress(1);
     }
 
     return () => {

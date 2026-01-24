@@ -1,9 +1,8 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { useRouter } from 'next/navigation';
 import Header from '@/components/Header';
-import { Upload, Video, Loader2, Image as ImageIcon, ChevronDown, RotateCcw, Trash2, ArrowRight } from 'lucide-react';
+import { Video, Loader2, Image as ImageIcon, RotateCcw, Trash2, Music, ChevronDown, ArrowRight } from 'lucide-react';
 import axios from 'axios';
 import { useSession } from 'next-auth/react';
 import { useProgressBar } from '@/hooks/useProgressBar';
@@ -51,20 +50,56 @@ interface VideoJob {
   result_url?: string;
   created_at: string;
   input_file_url?: string;
+  input_video_url?: string;
+  input_outfit_file_url?: string;
+  input_face_file_url?: string;
   prompt?: string;
 }
 
-export default function DanceImageBgPage() {
-  const router = useRouter();
+interface FileInputConfig {
+  name: string;
+  label: string;
+  accept: string;
+  maxSize: number; // MB
+  allowedTypes: string[];
+  icon?: 'video' | 'image' | 'audio' | 'file';
+  placeholder?: string;
+  description?: string;
+}
+
+interface FeaturePage3ColumnProps {
+  featureType: string;
+  title: string;
+  description?: string;
+  apiEndpoint: string;
+  fileInputs: FileInputConfig[];
+  hasPrompt?: boolean;
+  promptPlaceholder?: string;
+  hasQuality?: boolean;
+  hasMode?: boolean;
+  coinCost?: number;
+}
+
+export default function FeaturePage3Column({
+  featureType,
+  title,
+  description,
+  apiEndpoint,
+  fileInputs,
+  hasPrompt = false,
+  promptPlaceholder = 'Nhập prompt...',
+  hasQuality = false,
+  hasMode = false,
+  coinCost = 1
+}: FeaturePage3ColumnProps) {
   const { data: session } = useSession();
-  const [imageFile, setImageFile] = useState<File | null>(null);
-  const [videoFile, setVideoFile] = useState<File | null>(null);
+  const [files, setFiles] = useState<Record<string, File | null>>({});
+  const [prompt, setPrompt] = useState('');
   const [mode, setMode] = useState<'video' | 'image'>('video');
   const [quality, setQuality] = useState('720P');
   const [qualityCost, setQualityCost] = useState(1);
   const [isQualityOpen, setIsQualityOpen] = useState(false);
   const [isAdvancedOpen, setIsAdvancedOpen] = useState(false);
-  const [prompt, setPrompt] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
   const [serverProgress, setServerProgress] = useState<number | null>(null);
   const [jobId, setJobId] = useState<string | null>(null);
@@ -72,11 +107,12 @@ export default function DanceImageBgPage() {
   const [resultJobs, setResultJobs] = useState<VideoJob[]>([]);
   const [loadingJobs, setLoadingJobs] = useState(true);
   const [currentDisplayJob, setCurrentDisplayJob] = useState<VideoJob | null>(null);
+  const qualityRef = useRef<HTMLDivElement>(null);
   
   // Get deleted job IDs from localStorage
   const getDeletedJobIds = (): Set<string> => {
     if (typeof window === 'undefined') return new Set();
-    const deleted = localStorage.getItem('deleted_jobs_dance-image-bg');
+    const deleted = localStorage.getItem(`deleted_jobs_${featureType}`);
     return deleted ? new Set(JSON.parse(deleted)) : new Set();
   };
   
@@ -85,14 +121,14 @@ export default function DanceImageBgPage() {
     if (typeof window === 'undefined') return;
     const deleted = getDeletedJobIds();
     deleted.add(jobId);
-    localStorage.setItem('deleted_jobs_dance-image-bg', JSON.stringify(Array.from(deleted)));
+    localStorage.setItem(`deleted_jobs_${featureType}`, JSON.stringify(Array.from(deleted)));
   };
-  const qualityRef = useRef<HTMLDivElement>(null);
   
   const progress = useProgressBar(serverProgress, isGenerating);
 
   // Close quality dropdown when clicking outside
   useEffect(() => {
+    if (!hasQuality) return;
     const handleClickOutside = (event: MouseEvent) => {
       if (qualityRef.current && !qualityRef.current.contains(event.target as Node)) {
         setIsQualityOpen(false);
@@ -106,7 +142,7 @@ export default function DanceImageBgPage() {
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
-  }, [isQualityOpen]);
+  }, [isQualityOpen, hasQuality]);
 
   // Fetch jobs history
   useEffect(() => {
@@ -128,29 +164,26 @@ export default function DanceImageBgPage() {
         timeout: 5000,
       });
       if (response.data && response.data.jobs) {
-        // Filter only dance-image-bg jobs
-        const danceJobs = response.data.jobs.filter((job: VideoJob) => job.feature_type === 'dance-image-bg');
-        const sortedJobs = danceJobs.sort((a: VideoJob, b: VideoJob) => 
+        const deletedJobIds = getDeletedJobIds();
+        const filteredJobs = response.data.jobs.filter(
+          (job: VideoJob) => job.feature_type === featureType && !deletedJobIds.has(job.id)
+        );
+        const sortedJobs = filteredJobs.sort((a: VideoJob, b: VideoJob) => 
           new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
         );
-        setResultJobs(sortedJobs.slice(0, 10)); // Show latest 10
+        setResultJobs(sortedJobs.slice(0, 10));
         
-        // Always set preview to latest completed job (replaces old one when new job is created)
-        // But exclude jobs that have been deleted by user
-        const deletedJobIds = getDeletedJobIds();
         const latestCompleted = sortedJobs.find((job: VideoJob) => 
           job.status === 'completed' && 
           job.result_url && 
           !deletedJobIds.has(job.id)
         );
         if (latestCompleted && latestCompleted.result_url) {
-          // Only update if this is a different job (newer) or if no current display job
           if (!currentDisplayJob || latestCompleted.id !== currentDisplayJob.id) {
             setPreviewUrl(latestCompleted.result_url);
             setCurrentDisplayJob(latestCompleted);
           }
         } else if (currentDisplayJob && deletedJobIds.has(currentDisplayJob.id)) {
-          // If current display job was deleted, clear it
           setCurrentDisplayJob(null);
           setPreviewUrl(null);
         }
@@ -162,45 +195,33 @@ export default function DanceImageBgPage() {
     }
   };
 
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileUpload = (inputName: string, e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0];
-      const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
-      if (!allowedTypes.includes(file.type)) {
-        alert('Chỉ chấp nhận file ảnh: JPEG, PNG, WebP');
+      const inputConfig = fileInputs.find(inp => inp.name === inputName);
+      
+      if (!inputConfig) return;
+      
+      if (!inputConfig.allowedTypes.includes(file.type)) {
+        alert(`Chỉ chấp nhận: ${inputConfig.accept}`);
         return;
       }
-      const MAX_SIZE = 50 * 1024 * 1024;
+      
+      const MAX_SIZE = inputConfig.maxSize * 1024 * 1024;
       if (file.size > MAX_SIZE) {
-        alert('Kích thước ảnh không được vượt quá 50MB');
+        alert(`Kích thước file không được vượt quá ${inputConfig.maxSize}MB`);
         return;
       }
-      setImageFile(file);
-      const url = URL.createObjectURL(file);
-      setPreviewUrl(url);
-    }
-  };
-
-  const handleVideoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      const file = e.target.files[0];
-      const allowedTypes = ['video/mp4', 'video/quicktime', 'video/x-msvideo'];
-      if (!allowedTypes.includes(file.type)) {
-        alert('Chỉ chấp nhận file video: MP4, MOV, AVI');
-        return;
-      }
-      const MAX_SIZE = 200 * 1024 * 1024;
-      if (file.size > MAX_SIZE) {
-        alert('Kích thước video không được vượt quá 200MB');
-        return;
-      }
-      setVideoFile(file);
+      
+      setFiles(prev => ({ ...prev, [inputName]: file }));
     }
   };
 
   const handleGenerate = async () => {
-    if (!imageFile || !videoFile) {
-      alert('Vui lòng tải lên cả ảnh và video!');
+    // Check all required files
+    const missingFiles = fileInputs.filter(inp => !files[inp.name]);
+    if (missingFiles.length > 0) {
+      alert(`Vui lòng tải lên: ${missingFiles.map(f => f.label).join(', ')}`);
       return;
     }
 
@@ -212,12 +233,24 @@ export default function DanceImageBgPage() {
 
     setIsGenerating(true);
     const formData = new FormData();
-    formData.append('image', imageFile);
-    formData.append('video', videoFile);
+    
+    // Add all files
+    fileInputs.forEach(input => {
+      const file = files[input.name];
+      if (file) {
+        formData.append(input.name, file);
+      }
+    });
+    
+    // Add prompt if available
+    if (hasPrompt && prompt) {
+      formData.append('prompt', prompt);
+    }
+    
     formData.append('user_id', user_id);
 
     try {
-      const response = await axios.post('/api/videos/dance-image-bg', formData, {
+      const response = await axios.post(apiEndpoint, formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
       setJobId(response.data.job_id);
@@ -243,17 +276,16 @@ export default function DanceImageBgPage() {
           clearInterval(interval);
           setIsGenerating(false);
           setServerProgress(100);
-          // Update display with new completed job
           if (result_url) {
             const completedJob: VideoJob = {
               id: jobId,
-              feature_type: 'dance-image-bg',
+              feature_type: featureType,
               status: 'completed',
               progress: 100,
               result_url: result_url,
               created_at: new Date().toISOString(),
               input_file_url: undefined,
-              prompt: undefined
+              prompt: prompt || undefined
             };
             setCurrentDisplayJob(completedJob);
             setPreviewUrl(result_url);
@@ -262,7 +294,7 @@ export default function DanceImageBgPage() {
         } else if (status === 'failed') {
           clearInterval(interval);
           setIsGenerating(false);
-          alert('Tạo video thất bại!');
+          alert('Tạo thất bại!');
         }
       } catch (error) {
         console.error('Polling error:', error);
@@ -280,9 +312,10 @@ export default function DanceImageBgPage() {
   };
 
   const handleRerun = async (job: VideoJob) => {
-    // For dance-image-bg, we need to re-upload image and video
-    if (!imageFile || !videoFile) {
-      alert('Vui lòng tải lên lại ảnh và video để rerun!');
+    // Check if all required files are still available
+    const missingFiles = fileInputs.filter(inp => !files[inp.name]);
+    if (missingFiles.length > 0) {
+      alert(`Vui lòng tải lên lại: ${missingFiles.map(f => f.label).join(', ')} để rerun!`);
       return;
     }
 
@@ -294,12 +327,22 @@ export default function DanceImageBgPage() {
 
     setIsGenerating(true);
     const formData = new FormData();
-    formData.append('image', imageFile);
-    formData.append('video', videoFile);
+    
+    fileInputs.forEach(input => {
+      const file = files[input.name];
+      if (file) {
+        formData.append(input.name, file);
+      }
+    });
+    
+    if (hasPrompt && prompt) {
+      formData.append('prompt', prompt);
+    }
+    
     formData.append('user_id', user_id);
 
     try {
-      const response = await axios.post('/api/videos/dance-image-bg', formData, {
+      const response = await axios.post(apiEndpoint, formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
       setJobId(response.data.job_id);
@@ -320,13 +363,8 @@ export default function DanceImageBgPage() {
     }
 
     try {
-      // Save deleted job ID to localStorage so it won't show again
       saveDeletedJobId(jobId);
-      
-      // Remove from local state
       setResultJobs(resultJobs.filter(job => job.id !== jobId));
-      
-      // Clear display if this is the current displayed job
       if (currentDisplayJob && currentDisplayJob.id === jobId) {
         setCurrentDisplayJob(null);
         setPreviewUrl(null);
@@ -336,6 +374,21 @@ export default function DanceImageBgPage() {
       alert('Không thể xóa job!');
     }
   };
+
+  const getIcon = (iconType?: 'video' | 'image' | 'audio' | 'file') => {
+    switch (iconType) {
+      case 'video':
+        return <Video className="text-white mx-auto mb-1 sm:mb-2 shrink-0" style={{ width: 'clamp(1.25rem, 5vw, 2rem)', height: 'clamp(1.25rem, 5vw, 2rem)' }} />;
+      case 'audio':
+        return <Music className="text-white mx-auto mb-1 sm:mb-2 shrink-0" style={{ width: 'clamp(1.25rem, 5vw, 2rem)', height: 'clamp(1.25rem, 5vw, 2rem)' }} />;
+      case 'image':
+      default:
+        return <ImageIcon className="text-white mx-auto mb-1 sm:mb-2 shrink-0" style={{ width: 'clamp(1.25rem, 5vw, 2rem)', height: 'clamp(1.25rem, 5vw, 2rem)' }} />;
+    }
+  };
+
+  const allFilesUploaded = fileInputs.every(inp => files[inp.name]);
+  const displayCoinCost = hasQuality ? qualityCost : coinCost;
 
   return (
     <div className="min-h-screen bg-black">
@@ -348,133 +401,123 @@ export default function DanceImageBgPage() {
               <div className="bg-[#1A1A1A] rounded-[20px] pt-[10px] pb-6 px-4 sm:px-6 border-b border-gray-400/30 h-fit w-full min-w-0">
                 <h1 className="block text-lg sm:text-xl font-medium text-white mb-[15px] pb-[10px] border-b border-gray-400/30 -mx-4 sm:-mx-6 px-4 sm:px-6">Kling Motion Control</h1>
                 
-                {/* Motion Control Preview Card */}
+                {/* Preview Card */}
                 <div className="bg-[#2a2a2a] rounded-[25px] p-4 sm:p-6 mb-4 sm:mb-6 min-h-[170px] sm:min-h-[220px] overflow-hidden w-full min-w-0">
                   <div className="text-[#D344FF] font-semibold mb-2 break-words" style={{ fontSize: 'clamp(0.875rem, 3vw, 1.25rem)' }}>Motion Control</div>
-                  <p className="text-gray-400 break-words" style={{ fontSize: 'clamp(0.75rem, 2.5vw, 0.875rem)' }}>Tạo nhân vật AI chuyển động theo ý muốn</p>
+                  <p className="text-gray-400 break-words" style={{ fontSize: 'clamp(0.75rem, 2.5vw, 0.875rem)' }}>{description || 'Tạo nhân vật AI chuyển động theo ý muốn'}</p>
                 </div>
                 
-                {/* Upload Areas - Horizontal */}
+                {/* Upload Areas */}
                 <div className="w-full min-w-0 mb-4 sm:mb-6">
-                  <div className="grid grid-cols-2 gap-2 sm:gap-4 min-w-0">
-                    <div className="bg-[#252525] rounded-[20px] p-2 sm:p-4 text-center flex flex-col items-center justify-center aspect-3/4 min-h-0 overflow-hidden min-w-0 shrink-0">
-                    <Video className="text-white mx-auto mb-1 sm:mb-2 shrink-0" style={{ width: 'clamp(1.25rem, 5vw, 2rem)', height: 'clamp(1.25rem, 5vw, 2rem)' }} />
-                    <input
-                      type="file"
-                      accept="video/*"
-                      onChange={handleVideoUpload}
-                      className="hidden"
-                      id="video-upload"
-                    />
-                    <label
-                      htmlFor="video-upload"
-                      className="cursor-pointer w-full px-1"
-                    >
-                      <div className="text-white font-semibold mb-0.5 sm:mb-1 break-words leading-tight" style={{ fontSize: 'clamp(0.625rem, 3vw, 0.875rem)' }}>Thêm video ở đây</div>
-                      <div className="text-gray-400 break-words leading-tight" style={{ fontSize: 'clamp(0.5rem, 2.5vw, 0.75rem)' }}>Độ dài từ 3 - 30s</div>
-                    </label>
-                  </div>
-                  
-                  <div className="bg-[#252525] rounded-[20px] p-2 sm:p-4 text-center flex flex-col items-center justify-center aspect-3/4 min-h-0 overflow-hidden min-w-0 flex-shrink-0">
-                    <ImageIcon className="text-white mx-auto mb-1 sm:mb-2 shrink-0" style={{ width: 'clamp(1.25rem, 5vw, 2rem)', height: 'clamp(1.25rem, 5vw, 2rem)' }} />
-                    <input
-                      type="file"
-                      accept="image/*"
-                      onChange={handleImageUpload}
-                      className="hidden"
-                      id="image-upload"
-                    />
-                    <label
-                      htmlFor="image-upload"
-                      className="cursor-pointer w-full px-1"
-                    >
-                      <div className="text-white font-semibold mb-0.5 sm:mb-1 break-words leading-tight" style={{ fontSize: 'clamp(0.625rem, 3vw, 0.875rem)' }}>Thêm ảnh ở đây</div>
-                      <div className="text-gray-400 break-words leading-tight" style={{ fontSize: 'clamp(0.5rem, 2.5vw, 0.75rem)' }}>Nên cho ảnh rõ nét mặt và cơ thể</div>
-                    </label>
+                  <div className={`grid ${fileInputs.length === 1 ? 'grid-cols-1' : 'grid-cols-2'} gap-2 sm:gap-4 min-w-0`}>
+                    {fileInputs.map((input) => (
+                      <div key={input.name} className={`bg-[#252525] rounded-[20px] p-2 sm:p-4 text-center flex flex-col items-center justify-center overflow-hidden min-w-0 shrink-0 ${fileInputs.length === 1 ? 'min-h-[170px] sm:min-h-[220px]' : 'aspect-3/4 min-h-0'}`}>
+                      {getIcon(input.icon)}
+                      <input
+                        type="file"
+                        accept={input.accept}
+                        onChange={(e) => handleFileUpload(input.name, e)}
+                        className="hidden"
+                        id={`${input.name}-upload`}
+                      />
+                      <label
+                        htmlFor={`${input.name}-upload`}
+                        className="cursor-pointer w-full px-1"
+                      >
+                        <div className="text-white font-semibold mb-0.5 sm:mb-1 break-words leading-tight" style={{ fontSize: 'clamp(0.625rem, 3vw, 0.875rem)' }}>
+                          {files[input.name] ? files[input.name]!.name : (input.placeholder || input.label)}
+                        </div>
+                        {!files[input.name] && (
+                          <div className="text-gray-400 break-words leading-tight" style={{ fontSize: 'clamp(0.5rem, 2.5vw, 0.75rem)' }}>
+                            {input.description || 'Chọn file'}
+                          </div>
+                        )}
+                      </label>
                     </div>
+                  ))}
                   </div>
                 </div>
 
                 {/* Quality Selector */}
-                <div className="mb-4 sm:mb-6 relative w-full min-w-0" ref={qualityRef}>
-                  <div 
-                    className="flex items-center justify-between bg-[#252525] rounded-[20px] px-3 sm:px-4 py-2 cursor-pointer hover:bg-[#3a3a3a] transition-all relative overflow-hidden w-full min-w-0"
-                    onClick={() => setIsQualityOpen(!isQualityOpen)}
-                  >
-                    <div className="flex flex-col min-w-0 flex-1">
-                      <label className="text-white mb-1 break-words" style={{ fontSize: 'clamp(0.625rem, 3vw, 0.875rem)' }}>Chất lượng</label>
-                      <span className="text-white font-semibold break-words" style={{ fontSize: 'clamp(0.625rem, 3vw, 0.875rem)' }}>{quality}</span>
+                {hasQuality && (
+                  <div className="mb-4 sm:mb-6 relative w-full min-w-0" ref={qualityRef}>
+                    <div 
+                      className="flex items-center justify-between bg-[#252525] rounded-[20px] px-3 sm:px-4 py-2 cursor-pointer hover:bg-[#3a3a3a] transition-all relative overflow-hidden w-full min-w-0"
+                      onClick={() => setIsQualityOpen(!isQualityOpen)}
+                    >
+                      <div className="flex flex-col min-w-0 flex-1">
+                        <label className="text-white mb-1 break-words" style={{ fontSize: 'clamp(0.625rem, 3vw, 0.875rem)' }}>Chất lượng</label>
+                        <span className="text-white font-semibold break-words" style={{ fontSize: 'clamp(0.625rem, 3vw, 0.875rem)' }}>{quality}</span>
+                      </div>
+                      <ArrowRight className="text-gray-400 shrink-0 ml-2" style={{ width: 'clamp(0.625rem, 3vw, 1rem)', height: 'clamp(0.625rem, 3vw, 1rem)' }} />
                     </div>
-                    <ArrowRight className="text-gray-400 shrink-0 ml-2" style={{ width: 'clamp(0.625rem, 3vw, 1rem)', height: 'clamp(0.625rem, 3vw, 1rem)' }} />
+                    
+                    {isQualityOpen && (
+                      <div className="absolute left-full top-0 ml-2 bg-[#1a1a1a] rounded-[20px] p-1.5 z-10 w-[170px]">
+                        <div
+                          onClick={() => {
+                            setQuality('720P');
+                            setQualityCost(1);
+                            setIsQualityOpen(false);
+                          }}
+                          className={`p-2 rounded-[10px] cursor-pointer transition-all mb-1.5 ${
+                            quality === '720P' ? 'bg-[#2a2a2a]' : 'bg-[#1a1a1a] hover:bg-[#2a2a2a]'
+                          }`}
+                        >
+                          <div className="text-white text-sm font-semibold mb-0.5">720P</div>
+                          <div className="text-gray-400 text-xs">Tốn 1 coin</div>
+                        </div>
+                        <div
+                          onClick={() => {
+                            setQuality('1080P');
+                            setQualityCost(2);
+                            setIsQualityOpen(false);
+                          }}
+                          className={`p-2 rounded-[10px] cursor-pointer transition-all ${
+                            quality === '1080P' ? 'bg-[#2a2a2a]' : 'bg-[#1a1a1a] hover:bg-[#2a2a2a]'
+                          }`}
+                        >
+                          <div className="text-white text-sm font-semibold mb-0.5">1080P</div>
+                          <div className="text-gray-400 text-xs">Tốn 2 coin</div>
+                        </div>
+                      </div>
+                    )}
                   </div>
-                  
-                  {/* Quality Dropdown */}
-                  {isQualityOpen && (
-                    <div className="absolute left-full top-0 ml-2 bg-[#1a1a1a] rounded-[20px] p-1.5 z-10 w-[170px]">
-                      <div
-                        onClick={() => {
-                          setQuality('720P');
-                          setQualityCost(1);
-                          setIsQualityOpen(false);
-                        }}
-                        className={`p-2 rounded-[10px] cursor-pointer transition-all mb-1.5 ${
-                          quality === '720P' ? 'bg-[#2a2a2a]' : 'bg-[#1a1a1a] hover:bg-[#2a2a2a]'
-                        }`}
-                      >
-                        <div className="text-white text-sm font-semibold mb-0.5">720P</div>
-                        <div className="text-gray-400 text-xs">Tốn 1 coin</div>
-                      </div>
-                      <div
-                        onClick={() => {
-                          setQuality('1080P');
-                          setQualityCost(2);
-                          setIsQualityOpen(false);
-                        }}
-                        className={`p-2 rounded-[10px] cursor-pointer transition-all ${
-                          quality === '1080P' ? 'bg-[#2a2a2a]' : 'bg-[#1a1a1a] hover:bg-[#2a2a2a]'
-                        }`}
-                      >
-                        <div className="text-white text-sm font-semibold mb-0.5">1080P</div>
-                        <div className="text-gray-400 text-xs">Tốn 2 coin</div>
-                      </div>
-                    </div>
-                  )}
-                </div>
+                )}
 
                 {/* Mode Selection */}
-                <div className="mb-4 sm:mb-6 bg-[#252525] rounded-[20px] p-3 sm:p-4 overflow-hidden w-full min-w-0">
-                  <label className="block text-white mb-2 break-words" style={{ fontSize: 'clamp(0.625rem, 3vw, 0.875rem)' }}>Chế độ</label>
-                  <div className="flex gap-2 mb-3 bg-[#1a1a1a] rounded-[10px] p-1">
-                    <button
-                      onClick={() => setMode('video')}
-                      className={`flex-1 px-2 sm:px-4 py-1.5 sm:py-2 rounded-[7px] transition-all flex items-center justify-center gap-1 sm:gap-2 min-w-0 overflow-hidden ${
-                        mode === 'video'
-                          ? 'bg-[#4C4C4C] text-white'
-                          : 'bg-transparent text-gray-400 hover:bg-[#3a3a3a]'
-                      }`}
-                    >
-                      <Video className="shrink-0" style={{ width: 'clamp(0.625rem, 3vw, 1rem)', height: 'clamp(0.625rem, 3vw, 1rem)' }} />
-                      <span className="break-words whitespace-nowrap" style={{ fontSize: 'clamp(0.625rem, 3vw, 0.875rem)' }}>Video</span>
-                    </button>
-                    <button
-                      onClick={() => setMode('image')}
-                      className={`flex-1 px-2 sm:px-4 py-1.5 sm:py-2 rounded-[7px] transition-all flex items-center justify-center gap-1 sm:gap-2 min-w-0 overflow-hidden ${
-                        mode === 'image'
-                          ? 'bg-[#4C4C4C] text-white'
-                          : 'bg-transparent text-gray-400 hover:bg-[#3a3a3a]'
-                      }`}
-                    >
-                      <ImageIcon className="shrink-0" style={{ width: 'clamp(0.625rem, 3vw, 1rem)', height: 'clamp(0.625rem, 3vw, 1rem)' }} />
-                      <span className="break-words whitespace-nowrap" style={{ fontSize: 'clamp(0.625rem, 3vw, 0.875rem)' }}>Ảnh</span>
-                    </button>
+                {hasMode && (
+                  <div className="mb-4 sm:mb-6 bg-[#252525] rounded-[20px] p-3 sm:p-4 overflow-hidden w-full min-w-0">
+                    <label className="block text-white mb-2 break-words" style={{ fontSize: 'clamp(0.625rem, 3vw, 0.875rem)' }}>Chế độ</label>
+                    <div className="flex gap-2 mb-3 bg-[#1a1a1a] rounded-[10px] p-1">
+                      <button
+                        onClick={() => setMode('video')}
+                        className={`flex-1 px-2 sm:px-4 py-1.5 sm:py-2 rounded-[7px] transition-all flex items-center justify-center gap-1 sm:gap-2 min-w-0 overflow-hidden ${
+                          mode === 'video'
+                            ? 'bg-[#4C4C4C] text-white'
+                            : 'bg-transparent text-gray-400 hover:bg-[#3a3a3a]'
+                        }`}
+                      >
+                        <Video className="shrink-0" style={{ width: 'clamp(0.625rem, 3vw, 1rem)', height: 'clamp(0.625rem, 3vw, 1rem)' }} />
+                        <span className="break-words whitespace-nowrap" style={{ fontSize: 'clamp(0.625rem, 3vw, 0.875rem)' }}>Video</span>
+                      </button>
+                      <button
+                        onClick={() => setMode('image')}
+                        className={`flex-1 px-2 sm:px-4 py-1.5 sm:py-2 rounded-[7px] transition-all flex items-center justify-center gap-1 sm:gap-2 min-w-0 overflow-hidden ${
+                          mode === 'image'
+                            ? 'bg-[#4C4C4C] text-white'
+                            : 'bg-transparent text-gray-400 hover:bg-[#3a3a3a]'
+                        }`}
+                      >
+                        <ImageIcon className="shrink-0" style={{ width: 'clamp(0.625rem, 3vw, 1rem)', height: 'clamp(0.625rem, 3vw, 1rem)' }} />
+                        <span className="break-words whitespace-nowrap" style={{ fontSize: 'clamp(0.625rem, 3vw, 0.875rem)' }}>Ảnh</span>
+                      </button>
+                    </div>
                   </div>
-                  <p className="text-gray-400 break-words leading-tight" style={{ fontSize: 'clamp(0.5rem, 2.5vw, 0.75rem)' }}>
-                    Bạn hãy chọn chế độ giữ nền của video: Chọn video thì sử dụng nền của video nhảy Chọn ảnh thì sử dụng nền của ảnh
-                  </p>
-                </div>
+                )}
 
                 {/* Advanced Mode */}
-                <div className="mb-4 sm:mb-6">
+                <div className="mb-4 sm:mb-6 w-full min-w-0">
                   <button
                     onClick={() => setIsAdvancedOpen(!isAdvancedOpen)}
                     className={`w-full flex items-center justify-between rounded-lg px-3 sm:px-4 py-2 transition-all overflow-hidden min-w-0 ${
@@ -485,7 +528,6 @@ export default function DanceImageBgPage() {
                     <ChevronDown className={`text-gray-400 transition-transform shrink-0 ml-2 ${isAdvancedOpen ? 'rotate-180' : ''}`} style={{ width: 'clamp(0.625rem, 3vw, 1rem)', height: 'clamp(0.625rem, 3vw, 1rem)' }} />
                   </button>
                   
-                  {/* Advanced Mode Panel */}
                   {isAdvancedOpen && (
                     <div className="mt-4 bg-[#2a2a2a] rounded-[20px] p-3 sm:p-4 overflow-hidden">
                       <div className="text-white font-semibold mb-2 break-words" style={{ fontSize: 'clamp(0.625rem, 3vw, 0.875rem)' }}>Prompt</div>
@@ -503,28 +545,9 @@ export default function DanceImageBgPage() {
                   )}
                 </div>
 
-                {/* Create Button */}
-                <button
-                  onClick={handleGenerate}
-                  disabled={isGenerating || !imageFile || !videoFile}
-                  className="w-full px-4 sm:px-6 py-3 sm:py-4 bg-[#D344FF] text-white rounded-[20px] hover:bg-[#B836E6] transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 overflow-hidden min-w-0"
-                >
-                  {isGenerating ? (
-                    <>
-                      <Loader2 className="animate-spin shrink-0" style={{ width: 'clamp(1rem, 4vw, 1.25rem)', height: 'clamp(1rem, 4vw, 1.25rem)' }} />
-                      <span className="break-words whitespace-nowrap" style={{ fontSize: 'clamp(0.75rem, 3vw, 1rem)' }}>Đang tạo...</span>
-                    </>
-                  ) : (
-                    <>
-                      <span className="break-words whitespace-nowrap" style={{ fontSize: 'clamp(0.75rem, 3vw, 1rem)' }}>Tạo video</span>
-                      <span className="shrink-0 whitespace-nowrap" style={{ fontSize: 'clamp(0.625rem, 3vw, 0.875rem)' }}>{qualityCost} Coin</span>
-                    </>
-                  )}
-                </button>
-
                 {/* Progress */}
                 {isGenerating && (
-                  <div className="mt-4">
+                  <div className="mb-4 sm:mb-6">
                     <div className="flex items-center justify-between mb-2">
                       <span className="text-white text-sm">Đang xử lý...</span>
                       <span className="text-[#D344FF] text-sm">{progress}%</span>
@@ -537,6 +560,26 @@ export default function DanceImageBgPage() {
                     </div>
                   </div>
                 )}
+
+                {/* Generate Button */}
+                <button
+                  onClick={handleGenerate}
+                  disabled={isGenerating || !allFilesUploaded}
+                  className="w-full px-4 sm:px-6 py-3 sm:py-4 bg-[#D344FF] text-white rounded-[20px] hover:bg-[#B836E6] transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 overflow-hidden min-w-0"
+                >
+                  {isGenerating ? (
+                    <>
+                      <Loader2 className="w-5 h-5 animate-spin shrink-0" />
+                      <span className="break-words whitespace-nowrap" style={{ fontSize: 'clamp(0.75rem, 3vw, 1rem)' }}>Đang tạo...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Video className="w-5 h-5 shrink-0" />
+                      <span className="break-words whitespace-nowrap" style={{ fontSize: 'clamp(0.75rem, 3vw, 1rem)' }}>Tạo</span>
+                      <span className="shrink-0 whitespace-nowrap" style={{ fontSize: 'clamp(0.625rem, 3vw, 0.875rem)' }}>{displayCoinCost} Coin</span>
+                    </>
+                  )}
+                </button>
               </div>
             </div>
 
@@ -566,8 +609,8 @@ export default function DanceImageBgPage() {
                   
                   return (
                     <div className="text-center">
-                      <div className="text-[#D344FF] text-xl sm:text-2xl font-semibold mb-2">Motion Control</div>
-                      <p className="text-gray-400 text-xs sm:text-sm">Tạo nhân vật AI chuyển động theo ý muốn</p>
+                      <div className="text-[#D344FF] text-xl sm:text-2xl font-semibold mb-2">{title}</div>
+                      <p className="text-gray-400 text-xs sm:text-sm">{description || 'Tạo nội dung AI'}</p>
                     </div>
                   );
                 })()}
@@ -591,7 +634,7 @@ export default function DanceImageBgPage() {
                     {/* Info Section - Quality and Duration */}
                     {currentDisplayJob.result_url && (() => {
                       const isImage = isImageUrl(currentDisplayJob.result_url);
-                      const displayQuality = quality || '1080p';
+                      const displayQuality = hasQuality ? quality : '1080p';
                       
                       return (
                         <div className="mb-4 flex gap-2">
@@ -631,11 +674,11 @@ export default function DanceImageBgPage() {
                     </div>
                   </>
                 ) : (
-                  <div className="flex flex-wrap items-center justify-between gap-2 mb-4 min-w-0 w-full">
-                    <div className="bg-[#101010] border border-gray-400/30 rounded-[10px] px-2 py-1 text-white text-[9px] sm:text-[10px] font-medium whitespace-nowrap shrink-0 max-w-full overflow-hidden">
-                      Kling motion control 2.6
+                    <div className="flex flex-wrap items-center justify-between gap-2 mb-4 min-w-0 w-full">
+                      <div className="bg-[#101010] border border-gray-400/30 rounded-[10px] px-2 py-1 text-white text-[9px] sm:text-[10px] font-medium whitespace-nowrap shrink-0 max-w-full overflow-hidden">
+                        Kling motion control 2.6
+                      </div>
                     </div>
-                  </div>
                 )}
               </div>
             </div>
@@ -645,3 +688,4 @@ export default function DanceImageBgPage() {
     </div>
   );
 }
+

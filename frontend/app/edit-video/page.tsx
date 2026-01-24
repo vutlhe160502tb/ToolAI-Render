@@ -1,26 +1,27 @@
-import FeaturePage from '@/components/FeaturePage';
-import { Video } from 'lucide-react';
+import FeaturePage3Column from '@/components/FeaturePage3Column';
 
 export default function EditVideoPage() {
   return (
-    <FeaturePage
-      config={{
-        title: 'Edit Video',
-        icon: <Video className="w-10 h-10 text-[#D344FF]" />,
-        apiEndpoint: '/api/videos/edit-video',
-        promptInput: true,
-        promptPlaceholder: 'Nhập mô tả cho các chỉnh sửa bạn muốn...',
-        fileInputs: [
-          {
-            name: 'file',
-            label: 'Tải lên video',
-            accept: 'video/*',
-            maxSize: 200,
-            allowedTypes: ['video/mp4', 'video/quicktime', 'video/x-msvideo'],
-          },
-        ],
-      }}
+    <FeaturePage3Column
+      featureType="edit-video"
+      title="Edit Video"
+      description="Chỉnh sửa video theo prompt"
+      apiEndpoint="/api/videos/edit-video"
+      fileInputs={[
+        {
+          name: 'file',
+          label: 'Tải lên video',
+          accept: 'video/*',
+          maxSize: 200,
+          allowedTypes: ['video/mp4', 'video/quicktime', 'video/x-msvideo'],
+          icon: 'video',
+          placeholder: 'Tải lên video',
+          description: 'Chọn video'
+        }
+      ]}
+      hasPrompt={true}
+      promptPlaceholder="Nhập mô tả cho các chỉnh sửa bạn muốn..."
+      coinCost={1}
     />
   );
 }
-

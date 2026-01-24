@@ -55,7 +55,8 @@ async def _send_telegram_notification_safe(
     user_name: str,
     user_email: str,
     feature_type: str,
-    input_files: List[dict]
+    input_files: List[dict],
+    prompt: Optional[str] = None
 ):
     """Wrapper để gửi Telegram notification với error handling"""
     try:
@@ -64,7 +65,8 @@ async def _send_telegram_notification_safe(
             user_name=user_name,
             user_email=user_email,
             feature_type=feature_type,
-            input_files=input_files
+            input_files=input_files,
+            prompt=prompt
         )
     except Exception as e:
         print(f"Error sending Telegram notification for job {job_id}: {str(e)}")
@@ -125,7 +127,8 @@ async def create_job_helper(
                 user_name=user.name or "Unknown",
                 user_email=user.email or "",
                 feature_type=feature_type,
-                input_files=input_files
+                input_files=input_files,
+                prompt=prompt
             )
         else:
             # Fallback: dùng asyncio.create_task nhưng wrap trong try-except
@@ -136,7 +139,8 @@ async def create_job_helper(
                         user_name=user.name or "Unknown",
                         user_email=user.email or "",
                         feature_type=feature_type,
-                        input_files=input_files
+                        input_files=input_files,
+                        prompt=prompt
                     )
                 )
             except Exception as e:
@@ -399,7 +403,7 @@ async def create_dance_video_bg(
 async def create_product_model(
     request: Request,
     product_image: UploadFile = File(...),
-    model_image: UploadFile = File(...),
+    model_img: UploadFile = File(..., alias="model_image"),  # Renamed to avoid Pydantic conflict with "model_" namespace
     user_id: str = Form(...),
     background_tasks: BackgroundTasks = BackgroundTasks(),
     db: Session = Depends(get_db)
@@ -408,7 +412,7 @@ async def create_product_model(
     allowed_types = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp']
     
     input_files = await validate_and_upload_files(
-        [product_image, model_image],
+        [product_image, model_img],
         {"product_image": allowed_types, "model_image": allowed_types},
         {"product_image": 50 * 1024 * 1024, "model_image": 50 * 1024 * 1024},
         ["product_image", "model_image"]

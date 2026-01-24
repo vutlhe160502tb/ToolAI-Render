@@ -2,6 +2,18 @@
 node_modules/
 package-lock.json
 
+# Build outputs and cache
+.next/
+.turbo/
+.swc/
+*.tsbuildinfo
+__pycache__/
+*.pyc
+.pytest_cache/
+dist/
+build/
+out/
+
 # Environment variables
 .env
 .env.*

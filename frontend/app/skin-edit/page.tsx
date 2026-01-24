@@ -1,24 +1,25 @@
-import FeaturePage from '@/components/FeaturePage';
-import { Image } from 'lucide-react';
+import FeaturePage3Column from '@/components/FeaturePage3Column';
 
 export default function SkinEditPage() {
   return (
-    <FeaturePage
-      config={{
-        title: 'Chỉnh Sửa Da',
-        icon: <Image className="w-10 h-10 text-[#D344FF]" />,
-        apiEndpoint: '/api/videos/skin-edit',
-        fileInputs: [
-          {
-            name: 'file',
-            label: 'Tải lên ảnh',
-            accept: 'image/*',
-            maxSize: 50,
-            allowedTypes: ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'],
-          },
-        ],
-      }}
+    <FeaturePage3Column
+      featureType="skin-edit"
+      title="Chỉnh Sửa Da"
+      description="Chỉnh sửa da trong ảnh"
+      apiEndpoint="/api/videos/skin-edit"
+      fileInputs={[
+        {
+          name: 'file',
+          label: 'Tải lên ảnh',
+          accept: 'image/*',
+          maxSize: 50,
+          allowedTypes: ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'],
+          icon: 'image',
+          placeholder: 'Tải lên ảnh',
+          description: 'Chọn ảnh'
+        }
+      ]}
+      coinCost={1}
     />
   );
 }
-

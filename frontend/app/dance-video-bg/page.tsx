@@ -1,31 +1,35 @@
-import FeaturePage from '@/components/FeaturePage';
-import { Video } from 'lucide-react';
+import FeaturePage3Column from '@/components/FeaturePage3Column';
 
 export default function DanceVideoBgPage() {
   return (
-    <FeaturePage
-      config={{
-        title: 'Nhảy Với Nền Từ Video',
-        icon: <Video className="w-10 h-10 text-[#D344FF]" />,
-        apiEndpoint: '/api/videos/dance-video-bg',
-        fileInputs: [
-          {
-            name: 'image',
-            label: 'Tải lên ảnh (9:16)',
-            accept: 'image/*',
-            maxSize: 50,
-            allowedTypes: ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'],
-          },
-          {
-            name: 'video',
-            label: 'Tải lên video nền (9:16)',
-            accept: 'video/*',
-            maxSize: 200,
-            allowedTypes: ['video/mp4', 'video/quicktime', 'video/x-msvideo'],
-          },
-        ],
-      }}
+    <FeaturePage3Column
+      featureType="dance-video-bg"
+      title="Nhảy Với Nền Từ Video"
+      description="Tạo nhân vật AI chuyển động với nền video"
+      apiEndpoint="/api/videos/dance-video-bg"
+      fileInputs={[
+        {
+          name: 'image',
+          label: 'Tải lên ảnh',
+          accept: 'image/*',
+          maxSize: 50,
+          allowedTypes: ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'],
+          icon: 'image',
+          placeholder: 'Tải lên ảnh',
+          description: 'Chọn ảnh'
+        },
+        {
+          name: 'video',
+          label: 'Tải lên video nền',
+          accept: 'video/*',
+          maxSize: 200,
+          allowedTypes: ['video/mp4', 'video/quicktime', 'video/x-msvideo'],
+          icon: 'video',
+          placeholder: 'Tải lên video nền',
+          description: 'Chọn video'
+        }
+      ]}
+      coinCost={1}
     />
   );
 }
-

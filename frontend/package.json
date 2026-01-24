@@ -6,7 +6,10 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "clean": "node -e \"const fs=require('fs');['.next','.turbo','.swc'].forEach(d=>{try{fs.rmSync(d,{recursive:true,force:true});console.log('Removed',d)}catch(e){}});require('child_process').exec('find . -name \\\"*.tsbuildinfo\\\" -delete',()=>{})\"",
+    "clean:all": "npm run clean && rm -rf node_modules",
+    "fresh": "npm run clean:all && npm install"
   },
   "dependencies": {
     "@auth/core": "^0.34.3",

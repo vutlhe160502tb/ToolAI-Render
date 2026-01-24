@@ -250,13 +250,10 @@ export default function AdminPage() {
                           {getFeatureDescription(job.feature_type) && (
                             <p>
                               <span className="text-gray-500">Yêu cầu:</span>{' '}
-                              <span className="text-white">{getFeatureDescription(job.feature_type)}</span>
-                            </p>
-                          )}
-                          {job.prompt && (
-                            <p>
-                              <span className="text-gray-500">Prompt:</span>{' '}
-                              <span className="text-white">{job.prompt}</span>
+                              <span className="text-white">
+                                {getFeatureDescription(job.feature_type)}
+                                {job.prompt && ` - ${job.prompt}`}
+                              </span>
                             </p>
                           )}
                           {job.input_file_url && (

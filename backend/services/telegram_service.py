@@ -106,10 +106,12 @@ class TelegramService:
     
     @staticmethod
     async def send_job_notification(job_id: str, user_name: str, user_email: str, 
-                                   feature_type: str, input_files: List[dict]) -> bool:
+                                   feature_type: str, input_files: List[dict], 
+                                   prompt: Optional[str] = None) -> bool:
         """
         Gửi thông báo job mới cần xử lý cho người cầm bot
         input_files: List[{"url": "...", "type": "image"|"video", "name": "..."}]
+        prompt: Optional prompt text từ user
         """
         if not TelegramService.TELEGRAM_ADMIN_CHAT_ID:
             print("Warning: TELEGRAM_ADMIN_CHAT_ID not set, skipping Telegram notification")
@@ -161,13 +163,14 @@ class TelegramService:
         description = feature_descriptions.get(feature_type, "")
         
         # Gửi message thông tin trước với inline keyboard
+        prompt_text = f"\n<b>Prompt:</b> {prompt}" if prompt else ""
         message = f"""
 🎨 <b>JOB MỚI CẦN XỬ LÝ</b>
 
 <b>Job ID:</b> <code>{job_id}</code>
 <b>User:</b> {user_name} ({user_email})
 <b>Feature:</b> {feature_name}
-<b>Yêu cầu:</b> {description}
+<b>Yêu cầu:</b> {description}{prompt_text}
 
 💡 <i>Reply với file ảnh/video để upload kết quả</i>
         """.strip()

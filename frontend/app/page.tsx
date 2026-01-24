@@ -1,6 +1,4 @@
 import Header from '@/components/Header';
-import FeatureCard from '@/components/FeatureCard';
-import VideoCard from '@/components/VideoCard';
 import Footer from '@/components/Footer';
 
 export default function Home() {
@@ -169,7 +167,15 @@ export default function Home() {
         <div className="max-w-[1920px] mx-auto px-4 sm:px-8 md:px-[50px] mb-[100px]">
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
             {mainFeatures.map((feature, idx) => (
-              <FeatureCard key={idx} {...feature} showButton={false} compact={true} />
+              <a key={idx} className="block h-full" href={feature.route}>
+                <div className="group rounded-[25px] p-1 sm:p-1.5 md:p-2 transition-all cursor-pointer flex flex-col bg-black border border-black">
+                  <div className="w-full aspect-[4/3] bg-[#2a2a2a] rounded-[20px] mb-2 sm:mb-3 md:mb-4 flex items-center justify-center shrink-0">
+                    <div className="text-gray-500 text-xs sm:text-xs md:text-sm">Preview</div>
+                  </div>
+                  <h2 className="text-xs sm:text-sm md:text-base lg:text-lg font-bold text-white group-hover:bg-gradient-to-b group-hover:from-[#D344FF] group-hover:to-white/70 group-hover:bg-clip-text group-hover:text-transparent mb-[5px] transition-all truncate pl-1 sm:pl-1.5 md:pl-2">{feature.title}</h2>
+                  <p className="text-gray-400 text-xs sm:text-xs md:text-sm leading-relaxed truncate shrink pl-1 sm:pl-1.5 md:pl-2 -mt-1">{feature.description}</p>
+                </div>
+              </a>
             ))}
           </div>
         </div>
@@ -182,7 +188,15 @@ export default function Home() {
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
             {topChoices.map((feature, idx) => (
-              <FeatureCard key={idx} {...feature} showButton={false} bgColor="#343434" />
+              <a key={idx} className="block h-full" href={feature.route}>
+                <div className="group rounded-[25px] p-1 sm:p-1.5 md:p-2 transition-all cursor-pointer flex flex-col bg-[#1E1E1E]">
+                  <div className="w-full aspect-[4/3] bg-[#2a2a2a] rounded-[20px] mb-2 sm:mb-3 md:mb-4 flex items-center justify-center shrink-0">
+                    <div className="text-gray-500 text-xs sm:text-sm md:text-base">Preview</div>
+                  </div>
+                  <h2 className="text-sm sm:text-base md:text-lg lg:text-xl font-bold text-white group-hover:bg-gradient-to-b group-hover:from-[#D344FF] group-hover:to-white/70 group-hover:bg-clip-text group-hover:text-transparent mb-[5px] transition-all truncate pl-1 sm:pl-1.5 md:pl-2">{feature.title}</h2>
+                  <p className="text-gray-400 text-xs sm:text-sm md:text-base leading-relaxed truncate shrink pl-1 sm:pl-1.5 md:pl-2 -mt-1">{feature.description}</p>
+                </div>
+              </a>
             ))}
           </div>
         </div>
@@ -195,7 +209,15 @@ export default function Home() {
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
             {createImageFeatures.map((feature, idx) => (
-              <FeatureCard key={idx} {...feature} showButton={false} bgColor="#343434" />
+              <a key={idx} className="block h-full" href={feature.route}>
+                <div className="group rounded-[25px] p-1 sm:p-1.5 md:p-2 transition-all cursor-pointer flex flex-col bg-[#1E1E1E]">
+                  <div className="w-full aspect-[4/3] bg-[#2a2a2a] rounded-[20px] mb-2 sm:mb-3 md:mb-4 flex items-center justify-center shrink-0">
+                    <div className="text-gray-500 text-xs sm:text-sm md:text-base">Preview</div>
+                  </div>
+                  <h2 className="text-sm sm:text-base md:text-lg lg:text-xl font-bold text-white group-hover:bg-gradient-to-b group-hover:from-[#D344FF] group-hover:to-white/70 group-hover:bg-clip-text group-hover:text-transparent mb-[5px] transition-all truncate pl-1 sm:pl-1.5 md:pl-2">{feature.title}</h2>
+                  <p className="text-gray-400 text-xs sm:text-sm md:text-base leading-relaxed truncate shrink pl-1 sm:pl-1.5 md:pl-2 -mt-1">{feature.description}</p>
+                </div>
+              </a>
             ))}
           </div>
         </div>
@@ -208,7 +230,15 @@ export default function Home() {
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
             {createVideoFeatures.map((feature, idx) => (
-              <FeatureCard key={idx} {...feature} showButton={false} bgColor="#343434" />
+              <a key={idx} className="block h-full" href={feature.route}>
+                <div className="group rounded-[25px] p-1 sm:p-1.5 md:p-2 transition-all cursor-pointer flex flex-col bg-[#1E1E1E]">
+                  <div className="w-full aspect-[4/3] bg-[#2a2a2a] rounded-[20px] mb-2 sm:mb-3 md:mb-4 flex items-center justify-center shrink-0">
+                    <div className="text-gray-500 text-xs sm:text-sm md:text-base">Preview</div>
+                  </div>
+                  <h2 className="text-sm sm:text-base md:text-lg lg:text-xl font-bold text-white group-hover:bg-gradient-to-b group-hover:from-[#D344FF] group-hover:to-white/70 group-hover:bg-clip-text group-hover:text-transparent mb-[5px] transition-all truncate pl-1 sm:pl-1.5 md:pl-2">{feature.title}</h2>
+                  <p className="text-gray-400 text-xs sm:text-sm md:text-base leading-relaxed truncate shrink pl-1 sm:pl-1.5 md:pl-2 -mt-1">{feature.description}</p>
+                </div>
+              </a>
             ))}
           </div>
         </div>
@@ -221,7 +251,13 @@ export default function Home() {
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 mx-[100px]">
             {communityVideos.map((video, idx) => (
-              <VideoCard key={idx} {...video} />
+              <a key={idx} className="block" href={video.route}>
+                <div className="group rounded-[25px] p-1 sm:p-1.5 md:p-2 transition-all cursor-pointer bg-[#343434]">
+                  <div className="w-full aspect-[1/1.5] bg-[#2a2a2a] rounded-[20px] flex items-center justify-center">
+                    <div className="text-gray-500 text-xs sm:text-sm md:text-base">Preview</div>
+                  </div>
+                </div>
+              </a>
             ))}
           </div>
         </div>

@@ -1,21 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-export async function GET(
-  request: NextRequest,
-  context: { params?: Promise<{ jobId: string }> }
-) {
+/**
+ * GET /api/videos/progress?jobId=xxx
+ * Tránh dùng dynamic segment [jobId] có thể gây 404 với Next.js 16 / Turbopack.
+ */
+export async function GET(request: NextRequest) {
   try {
-    // Lấy jobId từ params (Next.js 15+) hoặc từ URL nếu params không có
-    let jobId: string | undefined;
-    if (context.params) {
-      const params = await context.params;
-      jobId = params.jobId;
-    }
-    if (!jobId) {
-      const pathname = request.nextUrl.pathname;
-      const match = pathname.match(/^\/api\/videos\/([^/]+)\/progress$/);
-      jobId = match?.[1];
-    }
+    const jobId = request.nextUrl.searchParams.get('jobId');
     if (!jobId) {
       return NextResponse.json(
         { message: 'jobId is required' },
@@ -23,9 +14,11 @@ export async function GET(
       );
     }
 
-    const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || process.env.BACKEND_URL || 'http://localhost:8000';
-    const response = await fetch(`${backendUrl}/api/videos/${jobId}/progress`, {
+    const backendUrl = (process.env.NEXT_PUBLIC_BACKEND_URL || process.env.BACKEND_URL || 'http://localhost:8000').replace(/\/$/, '');
+    const url = `${backendUrl}/api/videos/${encodeURIComponent(jobId)}/progress`;
+    const response = await fetch(url, {
       cache: 'no-store',
+      headers: { Accept: 'application/json' },
     });
 
     if (!response.ok) {
@@ -49,4 +42,3 @@ export async function GET(
     );
   }
 }
-

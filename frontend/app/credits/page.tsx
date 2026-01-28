@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import QRPaymentModal from '@/components/QRPaymentModal';
@@ -61,6 +61,8 @@ export default function CreditsPage() {
   const handleQRPayment = (pkg: typeof packages[0]) => {
     setSelectedPackage(pkg);
   };
+
+  const handleClosePaymentModal = useCallback(() => setSelectedPackage(null), []);
 
   return (
     <div className="min-h-screen bg-black">
@@ -179,7 +181,7 @@ export default function CreditsPage() {
       {selectedPackage && (
         <QRPaymentModal
           package={selectedPackage}
-          onClose={() => setSelectedPackage(null)}
+          onClose={handleClosePaymentModal}
         />
       )}
     </div>

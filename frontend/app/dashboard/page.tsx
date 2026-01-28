@@ -53,10 +53,9 @@ export default function DashboardPage() {
     }
   }, [activeFilter, session]);
 
-  const fetchJobs = async () => {
+  const fetchJobs = async (silent = false) => {
     if (!session) return;
-    
-    // Lấy user_id từ session
+
     const user_id = (session.user as any)?.id;
     if (!user_id) {
       console.error('User ID not found in session');
@@ -64,12 +63,11 @@ export default function DashboardPage() {
       setLoading(false);
       return;
     }
-    
+
     try {
-      setLoading(true);
-      // Don't send 'favorite' to backend, use 'all' instead and filter on frontend
+      if (!silent) setLoading(true);
       const apiStatus = activeFilter === 'favorite' ? 'all' : activeFilter;
-      const response = await axios.get('/api/jobs', { 
+      const response = await axios.get('/api/jobs', {
         params: { status: apiStatus, user_id: user_id },
         timeout: 5000,
       });
@@ -80,10 +78,9 @@ export default function DashboardPage() {
       }
     } catch (error: any) {
       console.error('Error fetching jobs:', error);
-      // Always set empty array on error to show empty state
       setJobs([]);
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   };
 
@@ -229,12 +226,29 @@ export default function DashboardPage() {
     });
   };
 
-  const handleDeleteSelected = () => {
-    if (confirm(`Bạn có chắc chắn muốn xóa ${selectedJobs.size} item(s) đã chọn?`)) {
-      // TODO: Implement delete functionality
-      console.log('Delete jobs:', Array.from(selectedJobs));
-      setSelectedJobs(new Set());
-      alert('Tính năng xóa đang được phát triển');
+  const handleDeleteSelected = async () => {
+    if (selectedJobs.size === 0) return;
+    if (!confirm(`Bạn có chắc chắn muốn xóa hẳn ${selectedJobs.size} ảnh/video đã chọn? Dữ liệu sẽ không khôi phục được.`)) {
+      return;
+    }
+    const user_id = (session?.user as any)?.id;
+    if (!user_id) return;
+    const idsToDelete = Array.from(selectedJobs);
+    setSelectedJobs(new Set());
+    // Cập nhật danh sách ngay: bỏ các job đã xóa khỏi state (không hiện "Đang tải...")
+    setJobs((prev) => prev.filter((job) => !idsToDelete.includes(job.id)));
+    try {
+      await axios.post('/api/jobs/delete', {
+        job_ids: idsToDelete,
+        user_id,
+      });
+      // Refresh im lặng từ server để đồng bộ (không bật loading)
+      await fetchJobs(true);
+    } catch (err: any) {
+      console.error('Delete jobs error:', err);
+      // Nếu xóa thất bại thì load lại danh sách
+      await fetchJobs(true);
+      alert(err.response?.data?.message || 'Không thể xóa. Thử lại sau.');
     }
   };
 

@@ -8,6 +8,7 @@ import axios from 'axios';
 import { useSession } from 'next-auth/react';
 import { useProgressBar } from '@/hooks/useProgressBar';
 import LoadingPreview from '@/components/LoadingPreview';
+import { truncateFilenameForTooltip } from '@/lib/utils';
 
 // Component to display video duration
 function VideoDurationInfo({ url }: { url: string }) {
@@ -100,6 +101,8 @@ export default function FeaturePage3Column({
 }: FeaturePage3ColumnProps) {
   const { data: session } = useSession();
   const [files, setFiles] = useState<Record<string, File | null>>({});
+  const [filePreviewUrls, setFilePreviewUrls] = useState<Record<string, string>>({});
+  const [fileNameTooltip, setFileNameTooltip] = useState<{ x: number; y: number; name: string } | null>(null);
   const [prompt, setPrompt] = useState('');
   const [mode, setMode] = useState<'video' | 'image'>('video');
   const [quality, setQuality] = useState('720P');
@@ -149,6 +152,27 @@ export default function FeaturePage3Column({
       document.removeEventListener('mousedown', handleClickOutside);
     };
   }, [isQualityOpen, hasQuality]);
+
+  // Preview URL cho từng file đã chọn (hiển thị ảnh/video trong ô upload)
+  useEffect(() => {
+    const newUrls: Record<string, string> = {};
+    fileInputs.forEach((input) => {
+      const file = files[input.name];
+      if (file) {
+        newUrls[input.name] = URL.createObjectURL(file);
+      }
+    });
+    setFilePreviewUrls((prev) => {
+      Object.values(prev).forEach((url) => URL.revokeObjectURL(url));
+      return newUrls;
+    });
+    return () => {
+      setFilePreviewUrls((prev) => {
+        Object.values(prev).forEach((url) => URL.revokeObjectURL(url));
+        return {};
+      });
+    };
+  }, [files]);
 
   // Fetch jobs history
   useEffect(() => {
@@ -285,7 +309,7 @@ export default function FeaturePage3Column({
   const startPolling = async (jobId: string) => {
     const interval = setInterval(async () => {
       try {
-        const response = await axios.get(`/api/videos/${jobId}/progress`);
+        const response = await axios.get(`/api/videos/progress`, { params: { jobId } });
         const { status, progress: prog, result_url } = response.data;
         setServerProgress(prog || 0);
 
@@ -313,7 +337,12 @@ export default function FeaturePage3Column({
           setIsGenerating(false);
           alert('Tạo thất bại!');
         }
-      } catch (error) {
+      } catch (error: any) {
+        if (error?.response?.status === 404) {
+          clearInterval(interval);
+          setIsGenerating(false);
+          return;
+        }
         console.error('Polling error:', error);
       }
     }, 3000);
@@ -459,9 +488,17 @@ export default function FeaturePage3Column({
                 {/* Upload Areas */}
                 <div className="w-full min-w-0 mb-4 sm:mb-6">
                   <div className={`grid ${fileInputs.length === 1 ? 'grid-cols-1' : 'grid-cols-2'} gap-2 sm:gap-4 min-w-0`}>
-                    {fileInputs.map((input) => (
-                      <div key={input.name} className={`bg-[#252525] rounded-[20px] p-2 sm:p-4 text-center flex flex-col items-center justify-center overflow-hidden min-w-0 shrink-0 ${fileInputs.length === 1 ? 'min-h-[170px] sm:min-h-[220px]' : 'aspect-3/4 min-h-0'}`}>
-                      {getIcon(input.icon)}
+                    {fileInputs.map((input) => {
+                      const file = files[input.name];
+                      const previewUrl = filePreviewUrls[input.name];
+                      const isVideo = file?.type.startsWith('video/');
+                      return (
+                      <div
+                        key={input.name}
+                        className={`bg-[#252525] rounded-[20px] p-2 sm:p-4 text-center flex flex-col items-center justify-center overflow-hidden min-w-0 shrink-0 relative ${fileInputs.length === 1 ? 'min-h-[170px] sm:min-h-[220px]' : 'aspect-3/4 min-h-0'}`}
+                        onMouseMove={(e) => file && setFileNameTooltip({ x: e.clientX, y: e.clientY, name: truncateFilenameForTooltip(file.name) })}
+                        onMouseLeave={() => setFileNameTooltip(null)}
+                      >
                       <input
                         type="file"
                         accept={input.accept}
@@ -471,21 +508,49 @@ export default function FeaturePage3Column({
                       />
                       <label
                         htmlFor={`${input.name}-upload`}
-                        className="cursor-pointer w-full px-1"
+                        className="cursor-pointer w-full h-full flex flex-col items-center justify-center absolute inset-0"
                       >
-                        <div className="text-white font-semibold mb-0.5 sm:mb-1 break-words leading-tight" style={{ fontSize: 'clamp(0.625rem, 3vw, 0.875rem)' }}>
-                          {files[input.name] ? files[input.name]!.name : (input.placeholder || input.label)}
-                        </div>
-                        {!files[input.name] && (
-                          <div className="text-gray-400 break-words leading-tight" style={{ fontSize: 'clamp(0.5rem, 2.5vw, 0.75rem)' }}>
-                            {input.description || 'Chọn file'}
-                          </div>
+                        {previewUrl ? (
+                          isVideo ? (
+                            <video
+                              src={previewUrl}
+                              className="absolute inset-0 w-full h-full object-cover rounded-lg"
+                              muted
+                              loop
+                              playsInline
+                              preload="metadata"
+                            />
+                          ) : (
+                            <img
+                              src={previewUrl}
+                              alt={input.label}
+                              className="absolute inset-0 w-full h-full object-cover rounded-lg"
+                            />
+                          )
+                        ) : (
+                          <>
+                            {getIcon(input.icon)}
+                            <div className="text-white font-semibold mb-0.5 sm:mb-1 break-words leading-tight px-1" style={{ fontSize: 'clamp(0.625rem, 3vw, 0.875rem)' }}>
+                              {input.placeholder || input.label}
+                            </div>
+                            <div className="text-gray-400 break-words leading-tight" style={{ fontSize: 'clamp(0.5rem, 2.5vw, 0.75rem)' }}>
+                              {input.description || 'Chọn file'}
+                            </div>
+                          </>
                         )}
                       </label>
                     </div>
-                  ))}
+                  );})}
                   </div>
                 </div>
+                {fileNameTooltip && (
+                  <div
+                    className="fixed z-[100] pointer-events-none px-2 py-1 bg-black/85 text-white text-xs rounded shadow-lg whitespace-nowrap"
+                    style={{ left: fileNameTooltip.x + 12, top: fileNameTooltip.y + 12 }}
+                  >
+                    {fileNameTooltip.name}
+                  </div>
+                )}
 
                 {/* Quality Selector */}
                 {hasQuality && (

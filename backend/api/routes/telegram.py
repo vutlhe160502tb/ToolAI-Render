@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy.orm import Session
 from database import get_db
 from models import VideoJob, JobStatus
-from api.utils.credits import complete_reservation
+from api.utils.credits import complete_reservation, release_reservation
 from services.telegram_service import TelegramService
 from services.zipline_service import ZiplineService
 from pydantic import BaseModel
@@ -151,9 +151,18 @@ async def telegram_webhook(
             result_url = upload_result["url"]
         except Exception as e:
             logger.error(f"Error uploading to Zipline: {str(e)}")
+            # Đánh dấu job lỗi và hoàn trả credit cho user
+            job.status = JobStatus.FAILED
+            job.error_message = f"Upload Zipline failed: {str(e)}"
+            db.commit()
+            if job.reservation_id:
+                await release_reservation(
+                    job.reservation_id, db,
+                    reason=f"Upload Zipline failed: {str(e)}"
+                )
             await TelegramService.send_message(
                 chat_id,
-                f"❌ Lỗi khi upload file lên Zipline: {str(e)}"
+                f"❌ Lỗi khi upload file lên Zipline: {str(e)}\nĐã hoàn trả credit cho user."
             )
             return {"ok": True}
         

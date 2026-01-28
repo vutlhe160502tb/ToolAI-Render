@@ -9,7 +9,7 @@ import { Upload, Image as ImageIcon, Loader2, RotateCcw, Trash2, Video, ChevronD
 import axios from 'axios';
 import LoadingPreview from '@/components/LoadingPreview';
 import VideoDurationInfo from '@/components/VideoDurationInfo';
-import { isImageUrl, formatDate, validateFile } from '@/lib/utils';
+import { isImageUrl, formatDate, validateFile, truncateFilenameForTooltip } from '@/lib/utils';
 import { VideoJob } from '@/lib/types';
 import { useFeaturePage } from '@/hooks/useFeaturePage';
 import { FILE_TYPES, FILE_SIZES } from '@/lib/constants';
@@ -17,6 +17,8 @@ import { FILE_TYPES, FILE_SIZES } from '@/lib/constants';
 export default function UpscaleImagePage() {
   const router = useRouter();
   const [file, setFile] = useState<File | null>(null);
+  const [filePreviewUrl, setFilePreviewUrl] = useState<string | null>(null);
+  const [fileNameTooltip, setFileNameTooltip] = useState<{ x: number; y: number } | null>(null);
   const [prompt, setPrompt] = useState('');
   const [isAdvancedOpen, setIsAdvancedOpen] = useState(false);
   const [quality, setQuality] = useState('2K');
@@ -46,18 +48,26 @@ export default function UpscaleImagePage() {
     apiEndpoint: '/api/videos/upscale-image',
   });
 
+  // Preview URL cho file đã chọn (chỉ hiển thị trong ô upload)
+  useEffect(() => {
+    if (!file) {
+      setFilePreviewUrl(null);
+      return;
+    }
+    const url = URL.createObjectURL(file);
+    setFilePreviewUrl(url);
+    return () => URL.revokeObjectURL(url);
+  }, [file]);
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
-      const file = e.target.files[0];
-      const validation = validateFile(file, [...FILE_TYPES.image], FILE_SIZES.image, 'ảnh');
+      const f = e.target.files[0];
+      const validation = validateFile(f, [...FILE_TYPES.image], FILE_SIZES.image, 'ảnh');
       if (!validation.valid) {
         alert(validation.error);
         return;
       }
-      setFile(file);
-      const url = URL.createObjectURL(file);
-      setPreviewUrl(url);
+      setFile(f);
     }
   };
 
@@ -278,8 +288,12 @@ export default function UpscaleImagePage() {
 
                 {/* Image Upload Area */}
                 <div>
-                  <label htmlFor="file-upload" className="cursor-pointer">
-                    <div className="bg-[#1A1A1A] rounded-[20px] p-8 sm:p-12 text-center flex flex-col items-center justify-center aspect-[298/317] md:aspect-[298/475] hover:bg-[#333333] transition-colors border border-gray-600/50">
+                  <label htmlFor="file-upload" className="cursor-pointer block">
+                    <div
+                      className="bg-[#1A1A1A] rounded-[20px] p-8 sm:p-12 text-center flex flex-col items-center justify-center aspect-[298/317] md:aspect-[298/475] hover:bg-[#333333] transition-colors border border-gray-600/50 overflow-hidden relative"
+                      onMouseMove={(e) => file && setFileNameTooltip({ x: e.clientX, y: e.clientY })}
+                      onMouseLeave={() => setFileNameTooltip(null)}
+                    >
                       <input
                         accept="image/*"
                         className="hidden"
@@ -287,12 +301,30 @@ export default function UpscaleImagePage() {
                         type="file"
                         onChange={handleFileUpload}
                       />
-                      <div className="w-16 h-16 bg-gray-600 rounded-lg flex items-center justify-center mb-4">
-                        <ImageIcon className="w-8 h-8 text-gray-400" />
-                      </div>
-                      <p className="text-gray-400 text-sm sm:text-base">
-                        {file ? truncateFileName(file.name) : 'Thêm ảnh ở đây'}
-                      </p>
+                      {fileNameTooltip && file && (
+                        <div
+                          className="fixed z-[100] pointer-events-none px-2 py-1 bg-black/85 text-white text-xs rounded shadow-lg whitespace-nowrap"
+                          style={{ left: fileNameTooltip.x + 12, top: fileNameTooltip.y + 12 }}
+                        >
+                          {truncateFilenameForTooltip(file.name)}
+                        </div>
+                      )}
+                      {filePreviewUrl ? (
+                        <img
+                          src={filePreviewUrl}
+                          alt="Ảnh cần làm nét"
+                          className="absolute inset-0 w-full h-full object-cover rounded-lg"
+                        />
+                      ) : (
+                        <>
+                          <div className="w-16 h-16 bg-gray-600 rounded-lg flex items-center justify-center mb-4">
+                            <ImageIcon className="w-8 h-8 text-gray-400" />
+                          </div>
+                          <p className="text-gray-400 text-sm sm:text-base">
+                            Thêm ảnh ở đây
+                          </p>
+                        </>
+                      )}
                     </div>
                   </label>
                 </div>

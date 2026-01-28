@@ -78,7 +78,7 @@ export function useFeaturePage({ featureType, apiEndpoint }: UseFeaturePageOptio
   const startPolling = async (jobId: string) => {
     const interval = setInterval(async () => {
       try {
-        const response = await axios.get(`/api/videos/${jobId}/progress`);
+        const response = await axios.get('/api/videos/progress', { params: { jobId } });
         const { status, progress: prog, result_url, input_file_url, input_video_url, input_face_file_url, input_outfit_file_url, prompt } = response.data;
         setServerProgress(prog || 0);
 
@@ -109,7 +109,13 @@ export function useFeaturePage({ featureType, apiEndpoint }: UseFeaturePageOptio
           setIsGenerating(false);
           alert(`Tạo ${featureType} thất bại!`);
         }
-      } catch (error) {
+      } catch (error: any) {
+        const status = error?.response?.status;
+        if (status === 404) {
+          clearInterval(interval);
+          setIsGenerating(false);
+          return;
+        }
         console.error('Polling error:', error);
       }
     }, 3000);

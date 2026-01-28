@@ -26,7 +26,7 @@ export default function QRPaymentModal({ package: pkg, onClose }: QRPaymentModal
   const [userId, setUserId] = useState<string | null>(null);
   const pollingIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const orderCreatedRef = useRef<boolean>(false); // Prevent creating multiple orders
-  const hasCheckedExistingPaymentRef = useRef<boolean>(false); // Track if we've checked for existing payment
+  const hasInitiatedOrderRef = useRef<boolean>(false); // Only create one order per modal open
   
   // Lấy user_id từ session (đã được lưu từ backend auth)
   const session_user_id = (session?.user as any)?.id;
@@ -92,8 +92,8 @@ export default function QRPaymentModal({ package: pkg, onClose }: QRPaymentModal
         const response = await axios.get(`/api/payments/${identifier}/status`);
         const { status } = response.data;
 
-        // Map backend status to frontend status
-        const mappedStatus = status === 'completed' ? 'completed' : 
+        // Map backend status to frontend status (SePay returns "paid", legacy returns "completed")
+        const mappedStatus = status === 'paid' || status === 'completed' ? 'completed' :
                             status === 'failed' ? 'failed' :
                             status === 'expired' ? 'expired' :
                             status === 'cancelled' ? 'cancelled' : 'pending';
@@ -130,57 +130,6 @@ export default function QRPaymentModal({ package: pkg, onClose }: QRPaymentModal
       }
     }, 3000); // Poll every 3 seconds
   }, [onClose, showToast]);
-
-  // Check for existing pending/completed payment before creating new one
-  const checkExistingPayment = useCallback(async (user_id: string) => {
-    try {
-      const response = await axios.get(`/api/payments/history`, {
-        params: { user_id, limit: 10, offset: 0 }
-      });
-      const payments = response.data?.payments || [];
-      
-      // Check if there's a recent pending or completed payment for the same package
-      const recentPayment = payments.find((payment: any) => {
-        const isSamePackage = payment.coins === pkg.coins && payment.amount === pkg.price;
-        const isRecent = new Date(payment.created_at) > new Date(Date.now() - 30 * 60 * 1000); // Within 30 minutes
-        const isPendingOrCompleted = payment.status === 'pending' || payment.status === 'completed';
-        return isSamePackage && isRecent && isPendingOrCompleted;
-      });
-
-      if (recentPayment) {
-        console.log('Found existing payment:', recentPayment);
-        // Use existing payment
-        if (recentPayment.payment_code) {
-          setPaymentCode(recentPayment.payment_code);
-        }
-        setTransactionId(recentPayment.transaction_id);
-        if (recentPayment.qr_code_url) {
-          setQrCodeUrl(recentPayment.qr_code_url);
-        }
-        
-        if (recentPayment.status === 'completed') {
-          setPaymentStatus('completed');
-          showToast('Giao dịch này đã được thanh toán thành công!', 'success');
-          setTimeout(() => {
-            onClose();
-          }, 2000);
-        } else {
-          setPaymentStatus('pending');
-          // Start polling for existing payment
-          const identifier = recentPayment.payment_code || recentPayment.transaction_id;
-          if (identifier) {
-            startPolling(identifier);
-          }
-        }
-        orderCreatedRef.current = true; // Mark as handled to prevent creating new order
-        return true; // Found existing payment
-      }
-      return false; // No existing payment found
-    } catch (error) {
-      console.error('Error checking existing payment:', error);
-      return false;
-    }
-  }, [pkg, startPolling, onClose, showToast]);
 
   const createPaymentOrder = useCallback(async () => {
     // Prevent creating order if already created
@@ -252,47 +201,33 @@ export default function QRPaymentModal({ package: pkg, onClose }: QRPaymentModal
     }
   }, [pkg, startPolling, userId, onClose]);
 
-  // Create payment order when modal opens AND userId is available
+  // Create payment order when modal opens (every time = new order)
   useEffect(() => {
-    // Only check/create order if we have both package and userId
     if (pkg && userId) {
-      // First, check for existing payment
-      if (!hasCheckedExistingPaymentRef.current) {
-        hasCheckedExistingPaymentRef.current = true;
-        checkExistingPayment(userId).then((hasExisting) => {
-          // If no existing payment found, create new one
-          if (!hasExisting && !orderCreatedRef.current) {
-            console.log('No existing payment found, creating new order with userId:', userId);
-            createPaymentOrder();
-          }
-        });
+      if (!hasInitiatedOrderRef.current) {
+        hasInitiatedOrderRef.current = true;
+        createPaymentOrder();
       }
     } else if (pkg && !userId) {
-      // Still loading userId, keep loading state
-      console.log('Waiting for userId...');
       setPaymentStatus('loading');
     }
 
-    // Cleanup: stop polling when component unmounts
     return () => {
       if (pollingIntervalRef.current) {
         clearInterval(pollingIntervalRef.current);
       }
-      // Reset refs when modal closes
       orderCreatedRef.current = false;
-      hasCheckedExistingPaymentRef.current = false;
+      hasInitiatedOrderRef.current = false;
     };
-  }, [pkg, userId, createPaymentOrder, checkExistingPayment]);
+  }, [pkg, userId, createPaymentOrder]);
 
   const handleClose = () => {
-    // Stop polling before closing
     if (pollingIntervalRef.current) {
       clearInterval(pollingIntervalRef.current);
       pollingIntervalRef.current = null;
     }
-    // Reset refs when closing
     orderCreatedRef.current = false;
-    hasCheckedExistingPaymentRef.current = false;
+    hasInitiatedOrderRef.current = false;
     onClose();
   };
 

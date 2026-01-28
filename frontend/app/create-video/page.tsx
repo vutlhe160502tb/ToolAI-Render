@@ -7,13 +7,15 @@ import { Upload, Video, Loader2, RotateCcw, Trash2, Image as ImageIcon, ChevronD
 import axios from 'axios';
 import LoadingPreview from '@/components/LoadingPreview';
 import VideoDurationInfo from '@/components/VideoDurationInfo';
-import { isImageUrl, formatDate, validateFile } from '@/lib/utils';
+import { isImageUrl, formatDate, validateFile, truncateFilenameForTooltip } from '@/lib/utils';
 import { VideoJob } from '@/lib/types';
 import { useFeaturePage } from '@/hooks/useFeaturePage';
 import { FILE_TYPES, FILE_SIZES } from '@/lib/constants';
 
 export default function CreateVideoPage() {
   const [file, setFile] = useState<File | null>(null);
+  const [filePreviewUrl, setFilePreviewUrl] = useState<string | null>(null);
+  const [fileNameTooltip, setFileNameTooltip] = useState<{ x: number; y: number } | null>(null);
   const [prompt, setPrompt] = useState('');
   const [isAdvancedOpen, setIsAdvancedOpen] = useState(false);
   const [quality, setQuality] = useState('720P');
@@ -41,19 +43,27 @@ export default function CreateVideoPage() {
     apiEndpoint: '/api/videos/create-video',
   });
 
+  // Preview URL cho file đã chọn (chỉ hiển thị trong ô upload)
+  useEffect(() => {
+    if (!file) {
+      setFilePreviewUrl(null);
+      return;
+    }
+    const url = URL.createObjectURL(file);
+    setFilePreviewUrl(url);
+    return () => URL.revokeObjectURL(url);
+  }, [file]);
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
-      const file = e.target.files[0];
+      const f = e.target.files[0];
       const allowedTypes = [...FILE_TYPES.image, ...FILE_TYPES.video];
-      const validation = validateFile(file, allowedTypes, FILE_SIZES.video, 'file');
+      const validation = validateFile(f, allowedTypes, FILE_SIZES.video, 'file');
       if (!validation.valid) {
         alert(validation.error);
         return;
       }
-      setFile(file);
-      const url = URL.createObjectURL(file);
-      setPreviewUrl(url);
+      setFile(f);
     }
   };
 
@@ -183,33 +193,57 @@ export default function CreateVideoPage() {
                 
                 {/* Upload Area */}
                 <div className="mb-4 sm:mb-6 w-full min-w-0">
-                  <div className="bg-[#252525] rounded-[20px] p-4 sm:p-6 text-center flex flex-col items-center justify-center min-h-[170px] sm:min-h-[220px]">
-                    {isVideoFile(file) ? (
-                      <Video className="text-white mx-auto mb-2 shrink-0" style={{ width: 'clamp(1.5rem, 5vw, 2.5rem)', height: 'clamp(1.5rem, 5vw, 2.5rem)' }} />
-                    ) : (
-                      <ImageIcon className="text-white mx-auto mb-2 shrink-0" style={{ width: 'clamp(1.5rem, 5vw, 2.5rem)', height: 'clamp(1.5rem, 5vw, 2.5rem)' }} />
-                    )}
-                    <input
-                      accept="image/*,video/*"
-                      className="hidden"
-                      id="file-upload"
-                      type="file"
-                      onChange={handleFileUpload}
-                    />
-                    <label
-                      htmlFor="file-upload"
-                      className="cursor-pointer w-full"
+                  <label htmlFor="file-upload" className="cursor-pointer block">
+                    <div
+                      className="bg-[#252525] rounded-[20px] p-4 sm:p-6 text-center flex flex-col items-center justify-center min-h-[170px] sm:min-h-[220px] overflow-hidden relative"
+                      onMouseMove={(e) => file && setFileNameTooltip({ x: e.clientX, y: e.clientY })}
+                      onMouseLeave={() => setFileNameTooltip(null)}
                     >
-                      <div className="text-white font-semibold mb-1 break-words leading-tight" style={{ fontSize: 'clamp(0.75rem, 3vw, 1rem)' }}>
-                        {file ? file.name : 'Tải lên file (ảnh hoặc video, tùy chọn)'}
-                      </div>
-                      {!file && (
-                        <div className="text-gray-400 break-words leading-tight mt-1" style={{ fontSize: 'clamp(0.625rem, 2.5vw, 0.875rem)' }}>
-                          Chọn file từ máy tính
+                      <input
+                        accept="image/*,video/*"
+                        className="hidden"
+                        id="file-upload"
+                        type="file"
+                        onChange={handleFileUpload}
+                      />
+                      {fileNameTooltip && file && (
+                        <div
+                          className="fixed z-[100] pointer-events-none px-2 py-1 bg-black/85 text-white text-xs rounded shadow-lg whitespace-nowrap"
+                          style={{ left: fileNameTooltip.x + 12, top: fileNameTooltip.y + 12 }}
+                        >
+                          {truncateFilenameForTooltip(file.name)}
                         </div>
                       )}
-                    </label>
-                  </div>
+                      {filePreviewUrl ? (
+                        isVideoFile(file) ? (
+                          <video
+                            src={filePreviewUrl}
+                            className="w-full h-full min-h-[170px] sm:min-h-[220px] object-cover rounded-lg absolute inset-0"
+                            muted
+                            loop
+                            playsInline
+                            preload="metadata"
+                          />
+                        ) : (
+                          <img
+                            src={filePreviewUrl}
+                            alt="Ảnh đã chọn"
+                            className="w-full h-full min-h-[170px] sm:min-h-[220px] object-cover rounded-lg absolute inset-0"
+                          />
+                        )
+                      ) : (
+                        <>
+                          <Video className="text-white mx-auto mb-2 shrink-0" style={{ width: 'clamp(1.5rem, 5vw, 2.5rem)', height: 'clamp(1.5rem, 5vw, 2.5rem)' }} />
+                          <div className="text-white font-semibold mb-1 break-words leading-tight" style={{ fontSize: 'clamp(0.75rem, 3vw, 1rem)' }}>
+                            Tải lên file (ảnh hoặc video, tùy chọn)
+                          </div>
+                          <div className="text-gray-400 break-words leading-tight mt-1" style={{ fontSize: 'clamp(0.625rem, 2.5vw, 0.875rem)' }}>
+                            Chọn file từ máy tính
+                          </div>
+                        </>
+                      )}
+                    </div>
+                  </label>
                 </div>
 
                 {/* Quality Selector */}

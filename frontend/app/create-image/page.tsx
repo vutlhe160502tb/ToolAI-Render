@@ -9,13 +9,15 @@ import { useSession } from 'next-auth/react';
 import { useProgressBar } from '@/hooks/useProgressBar';
 import LoadingPreview from '@/components/LoadingPreview';
 import VideoDurationInfo from '@/components/VideoDurationInfo';
-import { isImageUrl, formatDate, validateFile } from '@/lib/utils';
+import { isImageUrl, formatDate, validateFile, truncateFilenameForTooltip } from '@/lib/utils';
 import { VideoJob } from '@/lib/types';
 import { useDeletedJobs } from '@/hooks/useDeletedJobs';
 
 export default function CreateImagePage() {
   const { data: session } = useSession();
   const [file, setFile] = useState<File | null>(null);
+  const [filePreviewUrl, setFilePreviewUrl] = useState<string | null>(null);
+  const [fileNameTooltip, setFileNameTooltip] = useState<{ x: number; y: number } | null>(null);
   const [prompt, setPrompt] = useState('');
   const [isAdvancedOpen, setIsAdvancedOpen] = useState(false);
   const [quality, setQuality] = useState('720P');
@@ -50,6 +52,17 @@ export default function CreateImagePage() {
       document.removeEventListener('mousedown', handleClickOutside);
     };
   }, [isQualityOpen]);
+
+  // Preview URL cho file đã chọn (chỉ hiển thị trong ô upload, không ghi đè preview kết quả)
+  useEffect(() => {
+    if (!file) {
+      setFilePreviewUrl(null);
+      return;
+    }
+    const url = URL.createObjectURL(file);
+    setFilePreviewUrl(url);
+    return () => URL.revokeObjectURL(url);
+  }, [file]);
 
   // Fetch jobs history
   useEffect(() => {
@@ -105,16 +118,14 @@ export default function CreateImagePage() {
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
-      const file = e.target.files[0];
+      const f = e.target.files[0];
       const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
-      const validation = validateFile(file, allowedTypes, 50 * 1024 * 1024, 'ảnh');
+      const validation = validateFile(f, allowedTypes, 50 * 1024 * 1024, 'ảnh');
       if (!validation.valid) {
         alert(validation.error);
         return;
       }
-      setFile(file);
-      const url = URL.createObjectURL(file);
-      setPreviewUrl(url);
+      setFile(f);
     }
   };
 
@@ -162,7 +173,7 @@ export default function CreateImagePage() {
   const startPolling = async (jobId: string) => {
     const interval = setInterval(async () => {
       try {
-        const response = await axios.get(`/api/videos/${jobId}/progress`);
+        const response = await axios.get(`/api/videos/progress`, { params: { jobId } });
         const { status, progress: prog, result_url } = response.data;
         setServerProgress(prog || 0);
 
@@ -193,13 +204,16 @@ export default function CreateImagePage() {
           setIsGenerating(false);
           alert('Tạo ảnh thất bại!');
         }
-      } catch (error) {
+      } catch (error: any) {
+        if (error?.response?.status === 404) {
+          clearInterval(interval);
+          setIsGenerating(false);
+          return;
+        }
         console.error('Polling error:', error);
       }
     }, 3000);
   };
-
-
 
   const handleRerun = async (job: VideoJob) => {
     if (!job.input_file_url && !job.prompt) {
@@ -308,29 +322,46 @@ export default function CreateImagePage() {
                 
                 {/* Upload Area */}
                 <div className="mb-4 sm:mb-6 w-full min-w-0">
-                  <div className="bg-[#252525] rounded-[20px] p-4 sm:p-6 text-center flex flex-col items-center justify-center min-h-[170px] sm:min-h-[220px]">
-                    <ImageIcon className="text-white mx-auto mb-2 shrink-0" style={{ width: 'clamp(1.5rem, 5vw, 2.5rem)', height: 'clamp(1.5rem, 5vw, 2.5rem)' }} />
-                    <input
-                      accept="image/*"
-                      className="hidden"
-                      id="file-upload"
-                      type="file"
-                      onChange={handleFileUpload}
-                    />
-                    <label
-                      htmlFor="file-upload"
-                      className="cursor-pointer w-full"
+                  <label htmlFor="file-upload" className="cursor-pointer block">
+                    <div
+                      className="bg-[#252525] rounded-[20px] p-4 sm:p-6 text-center flex flex-col items-center justify-center min-h-[170px] sm:min-h-[220px] overflow-hidden relative"
+                      onMouseMove={(e) => file && setFileNameTooltip({ x: e.clientX, y: e.clientY })}
+                      onMouseLeave={() => setFileNameTooltip(null)}
                     >
-                      <div className="text-white font-semibold mb-1 break-words leading-tight" style={{ fontSize: 'clamp(0.75rem, 3vw, 1rem)' }}>
-                        {file ? file.name : 'Tải lên ảnh (tùy chọn)'}
-                      </div>
-                      {!file && (
-                        <div className="text-gray-400 break-words leading-tight mt-1" style={{ fontSize: 'clamp(0.625rem, 2.5vw, 0.875rem)' }}>
-                          Chọn ảnh từ máy tính
+                      <input
+                        accept="image/*"
+                        className="hidden"
+                        id="file-upload"
+                        type="file"
+                        onChange={handleFileUpload}
+                      />
+                      {fileNameTooltip && file && (
+                        <div
+                          className="fixed z-[100] pointer-events-none px-2 py-1 bg-black/85 text-white text-xs rounded shadow-lg whitespace-nowrap"
+                          style={{ left: fileNameTooltip.x + 12, top: fileNameTooltip.y + 12 }}
+                        >
+                          {truncateFilenameForTooltip(file.name)}
                         </div>
                       )}
-                    </label>
-                  </div>
+                      {filePreviewUrl ? (
+                        <img
+                          src={filePreviewUrl}
+                          alt="Ảnh đã chọn"
+                          className="w-full h-full min-h-[170px] sm:min-h-[220px] object-cover rounded-lg absolute inset-0"
+                        />
+                      ) : (
+                        <>
+                          <ImageIcon className="text-white mx-auto mb-2 shrink-0" style={{ width: 'clamp(1.5rem, 5vw, 2.5rem)', height: 'clamp(1.5rem, 5vw, 2.5rem)' }} />
+                          <div className="text-white font-semibold mb-1 break-words leading-tight" style={{ fontSize: 'clamp(0.75rem, 3vw, 1rem)' }}>
+                            Tải lên ảnh (tùy chọn)
+                          </div>
+                          <div className="text-gray-400 break-words leading-tight mt-1" style={{ fontSize: 'clamp(0.625rem, 2.5vw, 0.875rem)' }}>
+                            Chọn ảnh từ máy tính
+                          </div>
+                        </>
+                      )}
+                    </div>
+                  </label>
                 </div>
 
                 {/* Quality Selector */}

@@ -226,6 +226,7 @@ async def get_payment_status(
             try:
                 sepay_response = requests.get(
                     f"{sepay_api_url}/payments/{payment.payment_code}",
+                    headers={"Accept": "application/json"},
                     timeout=5
                 )
                 if sepay_response.status_code == 200:
@@ -242,6 +243,14 @@ async def get_payment_status(
                             db=db
                         )
                         db.refresh(payment)
+                    # Return SePay format for FE (paymentCode, status, amount, qrUrl, paidAt)
+                    return {
+                        "paymentCode": sepay_data.get("paymentCode") or payment.payment_code,
+                        "status": sepay_data.get("status", "").lower(),
+                        "amount": sepay_data.get("amount", payment.amount),
+                        "qrUrl": sepay_data.get("qrUrl") or payment.qr_code_url,
+                        "paidAt": sepay_data.get("paidAt"),
+                    }
             except Exception as e:
                 logger.warning(f"Failed to fetch SePay status: {str(e)}, using local status")
         

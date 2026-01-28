@@ -1,3 +1,4 @@
+from sqlalchemy import update
 from sqlalchemy.orm import Session
 from models import Payment, PaymentStatus, User
 from services.credit_service import CreditService
@@ -324,10 +325,12 @@ class PaymentService:
                 }
             
             # Validate amount (allow small difference for rounding)
-            if amount is not None and abs(payment.amount - amount) > 0.01:
-                logger.error(f"Amount mismatch: payment_code={payment_code or transaction_id}, expected={payment.amount}, received={amount}")
+            # SePay API may return amount as str; normalize to float
+            amount_num = float(amount) if amount is not None else None
+            if amount_num is not None and abs(float(payment.amount) - amount_num) > 0.01:
+                logger.error(f"Amount mismatch: payment_code={payment_code or transaction_id}, expected={payment.amount}, received={amount_num}")
                 raise ValueError(
-                    f"Amount mismatch. Expected: {payment.amount}, Received: {amount}"
+                    f"Amount mismatch. Expected: {payment.amount}, Received: {amount_num}"
                 )
             
             # Validate transfer_content/product_code (if provided)
@@ -341,47 +344,51 @@ class PaymentService:
             
             # Process based on status
             if is_paid:
-                # Update payment status
-                payment.status = PaymentStatus.COMPLETED
-                
-                # Set completed_at (paid_at from webhook or current time)
+                # Compute completed_at (paid_at from webhook or current time)
+                completed_at_dt = datetime.now(timezone.utc)
                 if paid_at:
                     try:
-                        # Try to parse ISO format
-                        payment.completed_at = datetime.fromisoformat(paid_at.replace('Z', '+00:00'))
-                    except:
+                        completed_at_dt = datetime.fromisoformat(paid_at.replace('Z', '+00:00'))
+                    except Exception:
                         try:
-                            # Try other formats
                             parsed_dt = datetime.strptime(paid_at, "%Y-%m-%d %H:%M:%S")
-                            # Make it timezone-aware if payment.created_at is timezone-aware
                             if payment.created_at and payment.created_at.tzinfo:
                                 parsed_dt = parsed_dt.replace(tzinfo=timezone.utc)
-                            payment.completed_at = parsed_dt
-                        except:
-                            # Use timezone-aware datetime
-                            payment.completed_at = datetime.now(timezone.utc)
-                else:
-                    # Use timezone-aware datetime to match database column
-                    payment.completed_at = datetime.now(timezone.utc)
-                
+                            completed_at_dt = parsed_dt
+                        except Exception:
+                            pass
+                # Atomic update: only one request can transition to COMPLETED
+                stmt = (
+                    update(Payment)
+                    .where(Payment.id == payment.id)
+                    .where(Payment.status != PaymentStatus.COMPLETED)
+                    .values(status=PaymentStatus.COMPLETED, completed_at=completed_at_dt)
+                )
+                result = db.execute(stmt)
                 db.commit()
-                
-                # Add credits to user
+                if result.rowcount == 0:
+                    logger.info(f"Payment already processed: transaction_id={transaction_id}")
+                    return {
+                        "message": "Payment already processed",
+                        "transaction_id": transaction_id,
+                        "status": "already_completed"
+                    }
+                # Add credits to user (only the request that won the atomic update)
+                user_id = payment.user_id
+                coins = payment.coins
                 CreditService.add_credits(
-                    user_id=payment.user_id,
-                    amount=payment.coins,  # Use coins instead of credits
+                    user_id=user_id,
+                    amount=coins,
                     description=f"Payment transaction {transaction_id}",
                     db=db
                 )
-                
-                logger.info(f"Payment processed successfully: payment_code={payment_code or transaction_id}, credits_added={payment.coins}")
-                
+                logger.info(f"Payment processed successfully: payment_code={payment_code or transaction_id}, credits_added={coins}")
                 return {
                     "message": "Payment processed successfully",
                     "transaction_id": transaction_id,
                     "payment_code": payment_code,
                     "status": "completed",
-                    "credits_added": payment.coins
+                    "credits_added": coins
                 }
             elif status and status.upper() in ["EXPIRED", "CANCELLED"]:
                 # Handle SePay expired/cancelled status

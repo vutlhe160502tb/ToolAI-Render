@@ -7,7 +7,7 @@ import Footer from '@/components/Footer';
 import { Image as ImageIcon, Loader2, Download, Heart } from 'lucide-react';
 import axios from 'axios';
 import LoadingPreview from '@/components/LoadingPreview';
-import { isImageUrl, validateFile } from '@/lib/utils';
+import { isImageUrl, validateFile, truncateFilenameForTooltip } from '@/lib/utils';
 import { useFeaturePage } from '@/hooks/useFeaturePage';
 import { FILE_TYPES, FILE_SIZES } from '@/lib/constants';
 
@@ -20,6 +20,7 @@ export default function SkinEditPage() {
   const router = useRouter();
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreviewUrl, setImagePreviewUrl] = useState<string | null>(null);
+  const [fileNameTooltip, setFileNameTooltip] = useState<{ x: number; y: number } | null>(null);
   const [favoriteJobs, setFavoriteJobs] = useState<Set<string>>(new Set());
   const [skinType, setSkinType] = useState<SkinType>(null);
 
@@ -204,8 +205,12 @@ export default function SkinEditPage() {
 
                 {/* Image Upload Area */}
                 <div>
-                  <label htmlFor="file-upload" className="cursor-pointer">
-                    <div className="bg-[#1A1A1A] rounded-[20px] p-8 sm:p-12 text-center flex flex-col items-center justify-center aspect-[298/400] hover:bg-[#333333] transition-colors border border-gray-600/50">
+                  <label htmlFor="file-upload" className="cursor-pointer block">
+                    <div
+                      className="bg-[#1A1A1A] rounded-[20px] p-8 sm:p-12 text-center flex flex-col items-center justify-center aspect-[298/400] hover:bg-[#333333] transition-colors border border-gray-600/50 overflow-hidden relative"
+                      onMouseMove={(e) => imageFile && setFileNameTooltip({ x: e.clientX, y: e.clientY })}
+                      onMouseLeave={() => setFileNameTooltip(null)}
+                    >
                       <input
                         accept="image/*"
                         className="hidden"
@@ -213,6 +218,14 @@ export default function SkinEditPage() {
                         type="file"
                         onChange={handleImageUpload}
                       />
+                      {fileNameTooltip && imageFile && (
+                        <div
+                          className="fixed z-[100] pointer-events-none px-2 py-1 bg-black/85 text-white text-xs rounded shadow-lg whitespace-nowrap"
+                          style={{ left: fileNameTooltip.x + 12, top: fileNameTooltip.y + 12 }}
+                        >
+                          {truncateFilenameForTooltip(imageFile.name)}
+                        </div>
+                      )}
                       {imagePreviewUrl ? (
                         <img
                           src={imagePreviewUrl}

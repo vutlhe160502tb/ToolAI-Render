@@ -35,7 +35,7 @@ export function useJobPolling({
 
     const poll = async () => {
       try {
-        const response = await axios.get(`/api/videos/${jobId}/progress`);
+        const response = await axios.get(`/api/videos/progress`, { params: { jobId } });
         const { status, progress: prog, result_url, input_file_url, input_video_url, input_face_file_url, input_outfit_file_url, prompt } = response.data;
         
         setServerProgress(prog || 0);
@@ -74,7 +74,15 @@ export function useJobPolling({
             onError(new Error('Job failed'));
           }
         }
-      } catch (error) {
+      } catch (error: any) {
+        if (error?.response?.status === 404) {
+          if (intervalRef.current) {
+            clearInterval(intervalRef.current);
+            intervalRef.current = null;
+          }
+          setIsPolling(false);
+          return;
+        }
         console.error('Polling error:', error);
         if (onError && error instanceof Error) {
           onError(error);

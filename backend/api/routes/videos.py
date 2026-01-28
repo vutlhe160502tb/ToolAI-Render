@@ -159,6 +159,29 @@ async def create_job_helper(
         # Đảm bảo luôn trả về JSON error
         raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
 
+
+# Progress phải đứng trước các route POST có path cụ thể để GET /{job_id}/progress luôn match đúng
+@router.get("/{job_id}/progress")
+async def get_job_progress(
+    job_id: str,
+    db: Session = Depends(get_db)
+):
+    job = db.query(VideoJob).filter(VideoJob.id == job_id).first()
+
+    if not job:
+        raise HTTPException(status_code=404, detail="Job not found")
+
+    return {
+        "job_id": job.id,
+        "status": job.status.value,
+        "progress": job.progress,
+        "result_url": job.result_url,
+        "input_file_url": job.input_file_url,
+        "prompt": job.prompt,
+        "error_message": job.error_message,
+    }
+
+
 @router.post("/dance-image-bg")
 @limiter.limit("10/minute")  # Max 10 requests per minute per IP
 async def create_dance_image_bg(
@@ -189,24 +212,6 @@ async def create_dance_image_bg(
         db=db,
         background_tasks=background_tasks
     )
-
-@router.get("/{job_id}/progress")
-async def get_job_progress(
-    job_id: str,
-    db: Session = Depends(get_db)
-):
-    job = db.query(VideoJob).filter(VideoJob.id == job_id).first()
-    
-    if not job:
-        raise HTTPException(status_code=404, detail="Job not found")
-    
-    return {
-        "job_id": job.id,
-        "status": job.status.value,
-        "progress": job.progress,
-        "result_url": job.result_url,
-        "error_message": job.error_message
-    }
 
 # ========== CREATE IMAGE ==========
 @router.post("/create-image")

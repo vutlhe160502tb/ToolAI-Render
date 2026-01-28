@@ -110,7 +110,7 @@ export default function FeaturePage({ config }: { config: FeatureConfig }) {
   const startPolling = async (jobId: string) => {
     const interval = setInterval(async () => {
       try {
-        const response = await axios.get(`/api/videos/${jobId}/progress`);
+        const response = await axios.get(`/api/videos/progress`, { params: { jobId } });
         const { status, progress: prog, result_url } = response.data;
         setServerProgress(prog || 0);
 
@@ -126,7 +126,12 @@ export default function FeaturePage({ config }: { config: FeatureConfig }) {
           setIsGenerating(false);
           alert('Thất bại!');
         }
-      } catch (error) {
+      } catch (error: any) {
+        if (error?.response?.status === 404) {
+          clearInterval(interval);
+          setIsGenerating(false);
+          return;
+        }
         console.error('Polling error:', error);
       }
     }, 3000);

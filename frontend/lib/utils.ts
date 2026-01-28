@@ -26,6 +26,17 @@ export function isVideoUrl(url: string): boolean {
 }
 
 /**
+ * Rút gọn tên file cho tooltip khi hover (vd: 048325....png)
+ */
+export function truncateFilenameForTooltip(name: string, headLen = 6): string {
+  const lastDot = name.lastIndexOf('.');
+  const ext = lastDot >= 0 ? name.slice(lastDot + 1) : '';
+  const base = lastDot >= 0 ? name.slice(0, lastDot) : name;
+  if (base.length <= headLen) return name;
+  return base.slice(0, headLen) + '....' + (ext || '');
+}
+
+/**
  * Format date to DD/MM/YYYY
  */
 export function formatDate(dateString: string): string {

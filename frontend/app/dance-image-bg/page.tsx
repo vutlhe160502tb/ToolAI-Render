@@ -243,7 +243,7 @@ export default function DanceImageBgPage() {
   const startPolling = async (jobId: string) => {
     const interval = setInterval(async () => {
       try {
-        const response = await axios.get(`/api/videos/${jobId}/progress`);
+        const response = await axios.get(`/api/videos/progress`, { params: { jobId } });
         const { status, progress: prog, result_url } = response.data;
         setServerProgress(prog || 0);
 
@@ -272,7 +272,12 @@ export default function DanceImageBgPage() {
           setIsGenerating(false);
           alert('Tạo video thất bại!');
         }
-      } catch (error) {
+      } catch (error: any) {
+        if (error?.response?.status === 404) {
+          clearInterval(interval);
+          setIsGenerating(false);
+          return;
+        }
         console.error('Polling error:', error);
       }
     }, 3000);

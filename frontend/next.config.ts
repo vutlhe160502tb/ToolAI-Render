@@ -8,6 +8,11 @@ const nextConfig: NextConfig = {
         hostname: 'img.vietqr.io',
         pathname: '/**',
       },
+      {
+        protocol: 'https',
+        hostname: 'qr.sepay.vn',
+        pathname: '/**',
+      },
     ],
   },
   // Suppress middleware deprecation warning

@@ -53,19 +53,17 @@ class Payment(Base):
     amount = Column(Float)
     coins = Column(Float)  # Changed from credits to match DB
     status = Column(SQLEnum(PaymentStatus), default=PaymentStatus.PENDING)
-    gateway_transaction_id = Column(String, nullable=True)
-    gateway_response = Column(Text, nullable=True)
-    qr_code_url = Column(Text, nullable=True)  # Changed from qr_code to match DB
-    qr_code_data = Column(Text, nullable=True)
-    bank_name = Column(String, nullable=True)
-    account_holder = Column(String, nullable=True)
-    account_number = Column(String, nullable=True)  # Changed from bank_account to match DB
+    qr_code_url = Column(Text, nullable=True)  # SePay QR URL
     transfer_content = Column(String, nullable=True)
     payment_metadata = Column(Text, nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
     completed_at = Column(DateTime(timezone=True), nullable=True)
-    payment_code = Column(String, nullable=True)
+    payment_code = Column(String, nullable=True)  # SePay payment code
+    # SePay specific fields
+    expired_at = Column(DateTime(timezone=True), nullable=True)  # QR code expiration time (30 minutes)
+    product_code = Column(String, nullable=True)  # SePay product code (e.g., PKG_1)
+    customer_code = Column(String, nullable=True)  # SePay customer code (user_id)
 
     user = relationship("User", back_populates="payments")
 

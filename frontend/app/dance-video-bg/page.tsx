@@ -29,6 +29,7 @@ export default function DanceVideoBgPage() {
           description: 'Chọn video'
         }
       ]}
+      hasQuality={true}
       coinCost={1}
     />
   );

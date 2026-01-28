@@ -214,6 +214,7 @@ export default function DanceImageBgPage() {
     const formData = new FormData();
     formData.append('image', imageFile);
     formData.append('video', videoFile);
+    if (quality) formData.append('quality', quality);
     formData.append('user_id', user_id);
 
     try {
@@ -221,6 +222,12 @@ export default function DanceImageBgPage() {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
       setJobId(response.data.job_id);
+      
+      // Trigger credits update event for real-time update with amount to deduct
+      window.dispatchEvent(new CustomEvent('credits-updated', {
+        detail: { amount: qualityCost }
+      }));
+      
       startPolling(response.data.job_id);
     } catch (error: any) {
       if (error.response?.status === 402) {
@@ -296,6 +303,7 @@ export default function DanceImageBgPage() {
     const formData = new FormData();
     formData.append('image', imageFile);
     formData.append('video', videoFile);
+    if (quality) formData.append('quality', quality);
     formData.append('user_id', user_id);
 
     try {
@@ -303,6 +311,12 @@ export default function DanceImageBgPage() {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
       setJobId(response.data.job_id);
+      
+      // Trigger credits update event for real-time update with amount to deduct
+      window.dispatchEvent(new CustomEvent('credits-updated', {
+        detail: { amount: qualityCost }
+      }));
+      
       startPolling(response.data.job_id);
     } catch (error: any) {
       if (error.response?.status === 402) {

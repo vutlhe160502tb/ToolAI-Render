@@ -78,6 +78,7 @@ async def create_job_helper(
     feature_type: str,
     input_files: List[dict],  # [{"url": "...", "type": "...", "name": "..."}]
     prompt: Optional[str] = None,
+    quality: Optional[str] = "720P",
     db: Session = None,
     background_tasks: Optional[BackgroundTasks] = None
 ) -> dict:
@@ -93,11 +94,16 @@ async def create_job_helper(
         if not user:
             raise HTTPException(status_code=404, detail="User not found")
         
-        # Check and reserve credits
+        # Validate quality parameter
+        if quality and quality.upper() not in ["720P", "1080P"]:
+            quality = "720P"  # Default to 720P if invalid
+        
+        # Check and reserve credits with quality
         try:
             reservation_id = await check_and_reserve_credits(
                 user_id=user_id,
                 feature_type=feature_type,
+                quality=quality or "720P",
                 db=db
             )
         except ValueError as e:
@@ -160,6 +166,7 @@ async def create_dance_image_bg(
     image: UploadFile = File(...),
     video: UploadFile = File(...),
     user_id: str = Form(...),  # Get from form data, required
+    quality: Optional[str] = Form("720P"),
     background_tasks: BackgroundTasks = BackgroundTasks(),
     db: Session = Depends(get_db)
 ):
@@ -178,6 +185,7 @@ async def create_dance_image_bg(
         user_id=user_id,
         feature_type="dance-image-bg",
         input_files=input_files,
+        quality=quality,
         db=db,
         background_tasks=background_tasks
     )
@@ -208,6 +216,7 @@ async def create_image(
     file: UploadFile = File(...),
     prompt: Optional[str] = Form(None),
     user_id: str = Form(...),
+    quality: Optional[str] = Form("720P"),
     background_tasks: BackgroundTasks = BackgroundTasks(),
     db: Session = Depends(get_db)
 ):
@@ -237,6 +246,7 @@ async def create_image(
         feature_type="create-image",
         input_files=[{"url": file_result["url"], "type": "image", "name": file_result["name"]}],
         prompt=prompt,
+        quality=quality,
         db=db,
         background_tasks=background_tasks
     )
@@ -249,6 +259,7 @@ async def create_video(
     file: UploadFile = File(...),
     prompt: Optional[str] = Form(None),
     user_id: str = Form(...),
+    quality: Optional[str] = Form("720P"),
     background_tasks: BackgroundTasks = BackgroundTasks(),
     db: Session = Depends(get_db)
 ):
@@ -282,6 +293,7 @@ async def create_video(
         feature_type="create-video",
         input_files=[{"url": file_result["url"], "type": file_type, "name": file_result["name"]}],
         prompt=prompt,
+        quality=quality,
         db=db,
         background_tasks=background_tasks
     )
@@ -293,6 +305,7 @@ async def upscale_image(
     request: Request,
     file: UploadFile = File(...),
     user_id: str = Form(...),
+    quality: Optional[str] = Form("720P"),
     background_tasks: BackgroundTasks = BackgroundTasks(),
     db: Session = Depends(get_db)
 ):
@@ -321,6 +334,7 @@ async def upscale_image(
         user_id=user_id,
         feature_type="upscale-image",
         input_files=[{"url": file_result["url"], "type": "image", "name": file_result["name"]}],
+        quality=quality,
         db=db,
         background_tasks=background_tasks
     )
@@ -333,6 +347,7 @@ async def change_outfit(
     image: UploadFile = File(...),
     outfit_image: UploadFile = File(...),
     user_id: str = Form(...),
+    quality: Optional[str] = Form("720P"),
     background_tasks: BackgroundTasks = BackgroundTasks(),
     db: Session = Depends(get_db)
 ):
@@ -369,6 +384,7 @@ async def change_outfit(
             {"url": image_result["url"], "type": "image", "name": image_result["name"]},
             {"url": outfit_result["url"], "type": "image", "name": outfit_result["name"]}
         ],
+        quality=quality,
         db=db,
         background_tasks=background_tasks
     )
@@ -381,6 +397,7 @@ async def create_dance_video_bg(
     image: UploadFile = File(...),
     video: UploadFile = File(...),
     user_id: str = Form(...),
+    quality: Optional[str] = Form("720P"),
     background_tasks: BackgroundTasks = BackgroundTasks(),
     db: Session = Depends(get_db)
 ):
@@ -395,7 +412,7 @@ async def create_dance_video_bg(
         ["image", "video"]
     )
     
-    return await create_job_helper(user_id, "dance-video-bg", input_files, db=db, background_tasks=background_tasks)
+    return await create_job_helper(user_id, "dance-video-bg", input_files, quality=quality, db=db, background_tasks=background_tasks)
 
 # ========== PRODUCT MODEL ==========
 @router.post("/product-model")
@@ -403,8 +420,9 @@ async def create_dance_video_bg(
 async def create_product_model(
     request: Request,
     product_image: UploadFile = File(...),
-    model_img: UploadFile = File(..., alias="model_image"),  # Renamed to avoid Pydantic conflict with "model_" namespace
+    person_image: UploadFile = File(...),  # Changed from model_image to avoid Pydantic conflict with "model_" namespace
     user_id: str = Form(...),
+    quality: Optional[str] = Form("720P"),
     background_tasks: BackgroundTasks = BackgroundTasks(),
     db: Session = Depends(get_db)
 ):
@@ -412,13 +430,13 @@ async def create_product_model(
     allowed_types = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp']
     
     input_files = await validate_and_upload_files(
-        [product_image, model_img],
-        {"product_image": allowed_types, "model_image": allowed_types},
-        {"product_image": 50 * 1024 * 1024, "model_image": 50 * 1024 * 1024},
-        ["product_image", "model_image"]
+        [product_image, person_image],
+        {"product_image": allowed_types, "person_image": allowed_types},
+        {"product_image": 50 * 1024 * 1024, "person_image": 50 * 1024 * 1024},
+        ["product_image", "person_image"]
     )
     
-    return await create_job_helper(user_id, "product-model", input_files, db=db, background_tasks=background_tasks)
+    return await create_job_helper(user_id, "product-model", input_files, quality=quality, db=db, background_tasks=background_tasks)
 
 # ========== SKIN EDIT ==========
 @router.post("/skin-edit")
@@ -427,6 +445,7 @@ async def skin_edit(
     request: Request,
     file: UploadFile = File(...),
     user_id: str = Form(...),
+    quality: Optional[str] = Form("720P"),
     background_tasks: BackgroundTasks = BackgroundTasks(),
     db: Session = Depends(get_db)
 ):
@@ -440,7 +459,7 @@ async def skin_edit(
         ["file"]
     )
     
-    return await create_job_helper(user_id, "skin-edit", input_files, db=db, background_tasks=background_tasks)
+    return await create_job_helper(user_id, "skin-edit", input_files, quality=quality, db=db, background_tasks=background_tasks)
 
 # ========== FACE SWAP ==========
 @router.post("/face-swap")
@@ -450,6 +469,7 @@ async def face_swap(
     source_image: UploadFile = File(...),
     target_image: UploadFile = File(...),
     user_id: str = Form(...),
+    quality: Optional[str] = Form("720P"),
     background_tasks: BackgroundTasks = BackgroundTasks(),
     db: Session = Depends(get_db)
 ):
@@ -463,7 +483,7 @@ async def face_swap(
         ["source_image", "target_image"]
     )
     
-    return await create_job_helper(user_id, "face-swap", input_files, db=db, background_tasks=background_tasks)
+    return await create_job_helper(user_id, "face-swap", input_files, quality=quality, db=db, background_tasks=background_tasks)
 
 # ========== CHARACTER SWAP ==========
 @router.post("/character-swap")
@@ -473,6 +493,7 @@ async def character_swap(
     file1: UploadFile = File(...),
     file2: UploadFile = File(...),
     user_id: str = Form(...),
+    quality: Optional[str] = Form("720P"),
     background_tasks: BackgroundTasks = BackgroundTasks(),
     db: Session = Depends(get_db)
 ):
@@ -496,7 +517,7 @@ async def character_swap(
         ["file1", "file2"]
     )
     
-    return await create_job_helper(user_id, "character-swap", input_files, db=db, background_tasks=background_tasks)
+    return await create_job_helper(user_id, "character-swap", input_files, quality=quality, db=db, background_tasks=background_tasks)
 
 # ========== CHARACTER SWAP 2 ==========
 @router.post("/character-swap-2")
@@ -506,6 +527,7 @@ async def character_swap_2(
     file1: UploadFile = File(...),
     file2: UploadFile = File(...),
     user_id: str = Form(...),
+    quality: Optional[str] = Form("720P"),
     background_tasks: BackgroundTasks = BackgroundTasks(),
     db: Session = Depends(get_db)
 ):
@@ -528,7 +550,7 @@ async def character_swap_2(
         ["file1", "file2"]
     )
     
-    return await create_job_helper(user_id, "character-swap-2", input_files, db=db, background_tasks=background_tasks)
+    return await create_job_helper(user_id, "character-swap-2", input_files, quality=quality, db=db, background_tasks=background_tasks)
 
 # ========== EDIT VIDEO ==========
 @router.post("/edit-video")
@@ -538,6 +560,7 @@ async def edit_video(
     file: UploadFile = File(...),
     prompt: Optional[str] = Form(None),
     user_id: str = Form(...),
+    quality: Optional[str] = Form("720P"),
     background_tasks: BackgroundTasks = BackgroundTasks(),
     db: Session = Depends(get_db)
 ):
@@ -551,7 +574,7 @@ async def edit_video(
         ["file"]
     )
     
-    return await create_job_helper(user_id, "edit-video", input_files, prompt=prompt, db=db, background_tasks=background_tasks)
+    return await create_job_helper(user_id, "edit-video", input_files, prompt=prompt, quality=quality, db=db, background_tasks=background_tasks)
 
 # ========== REPLACE AD ==========
 @router.post("/replace-ad")
@@ -561,6 +584,7 @@ async def replace_ad(
     video: UploadFile = File(...),
     character_image: UploadFile = File(...),
     user_id: str = Form(...),
+    quality: Optional[str] = Form("720P"),
     background_tasks: BackgroundTasks = BackgroundTasks(),
     db: Session = Depends(get_db)
 ):
@@ -575,7 +599,7 @@ async def replace_ad(
         ["video", "character_image"]
     )
     
-    return await create_job_helper(user_id, "replace-ad", input_files, db=db, background_tasks=background_tasks)
+    return await create_job_helper(user_id, "replace-ad", input_files, quality=quality, db=db, background_tasks=background_tasks)
 
 # ========== REPLACE AD 2 ==========
 @router.post("/replace-ad-2")
@@ -585,6 +609,7 @@ async def replace_ad_2(
     video: UploadFile = File(...),
     character_image: UploadFile = File(...),
     user_id: str = Form(...),
+    quality: Optional[str] = Form("720P"),
     background_tasks: BackgroundTasks = BackgroundTasks(),
     db: Session = Depends(get_db)
 ):
@@ -599,7 +624,7 @@ async def replace_ad_2(
         ["video", "character_image"]
     )
     
-    return await create_job_helper(user_id, "replace-ad-2", input_files, db=db, background_tasks=background_tasks)
+    return await create_job_helper(user_id, "replace-ad-2", input_files, quality=quality, db=db, background_tasks=background_tasks)
 
 # ========== PRODUCT INTRO AUDIO ==========
 @router.post("/product-intro-audio")
@@ -609,6 +634,7 @@ async def product_intro_audio(
     file: UploadFile = File(...),
     audio: UploadFile = File(...),
     user_id: str = Form(...),
+    quality: Optional[str] = Form("720P"),
     background_tasks: BackgroundTasks = BackgroundTasks(),
     db: Session = Depends(get_db)
 ):
@@ -628,7 +654,7 @@ async def product_intro_audio(
         ["file", "audio"]
     )
     
-    return await create_job_helper(user_id, "product-intro-audio", input_files, db=db, background_tasks=background_tasks)
+    return await create_job_helper(user_id, "product-intro-audio", input_files, quality=quality, db=db, background_tasks=background_tasks)
 
 # ========== LIP SYNC ==========
 @router.post("/lip-sync")
@@ -638,6 +664,7 @@ async def lip_sync(
     file: UploadFile = File(...),
     audio: UploadFile = File(...),
     user_id: str = Form(...),
+    quality: Optional[str] = Form("720P"),
     background_tasks: BackgroundTasks = BackgroundTasks(),
     db: Session = Depends(get_db)
 ):
@@ -657,5 +684,5 @@ async def lip_sync(
         ["file", "audio"]
     )
     
-    return await create_job_helper(user_id, "lip-sync", input_files, db=db, background_tasks=background_tasks)
+    return await create_job_helper(user_id, "lip-sync", input_files, quality=quality, db=db, background_tasks=background_tasks)
 

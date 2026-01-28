@@ -19,7 +19,7 @@ export default function ProductModelPage() {
           description: 'Chọn ảnh'
         },
         {
-          name: 'model_image',
+          name: 'person_image',
           label: 'Tải lên ảnh người mẫu',
           accept: 'image/*',
           maxSize: 50,
@@ -29,6 +29,7 @@ export default function ProductModelPage() {
           description: 'Chọn ảnh'
         }
       ]}
+      hasQuality={true}
       coinCost={1}
     />
   );

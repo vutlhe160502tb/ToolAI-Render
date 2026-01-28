@@ -29,6 +29,7 @@ export default function ReplaceAd2Page() {
           description: 'Chọn ảnh'
         }
       ]}
+      hasQuality={true}
       coinCost={1}
     />
   );

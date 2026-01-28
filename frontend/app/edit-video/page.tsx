@@ -21,6 +21,7 @@ export default function EditVideoPage() {
       ]}
       hasPrompt={true}
       promptPlaceholder="Nhập mô tả cho các chỉnh sửa bạn muốn..."
+      hasQuality={true}
       coinCost={1}
     />
   );

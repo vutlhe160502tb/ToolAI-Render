@@ -4,6 +4,7 @@ export async function POST(request: NextRequest) {
   try {
     const formData = await request.formData();
     const file = formData.get('file');
+    const quality = formData.get('quality') as string | null;
     const user_id = formData.get('user_id') as string;
 
     if (!file) return NextResponse.json({ message: 'Missing file' }, { status: 400 });
@@ -12,6 +13,7 @@ export async function POST(request: NextRequest) {
     const backendUrl = process.env.BACKEND_URL || 'http://localhost:8000';
     const backendFormData = new FormData();
     backendFormData.append('file', file);
+    if (quality) backendFormData.append('quality', quality);
     backendFormData.append('user_id', user_id);
 
     const response = await fetch(`${backendUrl}/api/videos/skin-edit`, { method: 'POST', body: backendFormData });

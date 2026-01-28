@@ -5,6 +5,7 @@ export async function POST(request: NextRequest) {
     const formData = await request.formData();
     const image = formData.get('image');
     const video = formData.get('video');
+    const quality = formData.get('quality') as string | null;
     const user_id = formData.get('user_id') as string;
 
     if (!image || !video) {
@@ -26,6 +27,7 @@ export async function POST(request: NextRequest) {
     const backendFormData = new FormData();
     backendFormData.append('image', image);
     backendFormData.append('video', video);
+    if (quality) backendFormData.append('quality', quality);
     backendFormData.append('user_id', user_id);
 
     const response = await fetch(`${backendUrl}/api/videos/dance-image-bg`, {

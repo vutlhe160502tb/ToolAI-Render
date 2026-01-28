@@ -7,31 +7,41 @@ from datetime import datetime, timedelta
 async def check_and_reserve_credits(
     user_id: str,
     feature_type: str,
-    db: Session
+    db: Session,
+    quality: str = "720P"
 ) -> str:
-    # Estimate cost
-    cost = CostEstimationService.estimate_cost(feature_type)
+    # Estimate cost based on feature type and quality
+    cost = CostEstimationService.estimate_cost(feature_type, quality)
     
     # Check user balance
     user = db.query(User).filter(User.id == user_id).first()
     if not user:
         raise ValueError("User not found")
     
-    # Check available balance (credits - pending reservations)
-    pending_reservations = db.query(CreditReservation).filter(
-        CreditReservation.user_id == user_id,
-        CreditReservation.status == ReservationStatus.PENDING
-    ).all()
+    # Check if user has enough credits
+    if user.credits < cost:
+        raise ValueError(f"Insufficient credits. Required: {cost}, Available: {user.credits}")
     
-    reserved_amount = sum(r.amount for r in pending_reservations)
-    available_balance = user.credits - reserved_amount
+    # Deduct credits immediately
+    balance_before = float(user.credits) if user.credits else 0.0
+    user.credits -= cost
+    balance_after = float(user.credits)
     
-    if available_balance < cost:
-        raise ValueError(f"Insufficient credits. Required: {cost}, Available: {available_balance}")
+    # Create CreditTransaction for deduction
+    transaction = CreditTransaction(
+        id=str(uuid.uuid4()),
+        user_id=user.id,
+        transaction_type="DEDUCTION",
+        amount=-cost,  # Negative amount for deduction
+        balance_before=balance_before,
+        balance_after=balance_after,
+        description=f"Video generation - {feature_type} ({quality})",
+        reference_id=None
+    )
+    db.add(transaction)
     
-    # Create reservation
+    # Create reservation for tracking (but amount is already deducted)
     reservation_id = str(uuid.uuid4())
-    # Set expires_at to 30 minutes from now
     expires_at = datetime.utcnow() + timedelta(minutes=30)
     
     reservation = CreditReservation(
@@ -44,12 +54,20 @@ async def check_and_reserve_credits(
     db.add(reservation)
     db.commit()
     
+    # Log for debugging
+    import logging
+    logger = logging.getLogger(__name__)
+    logger.info(f"Credits deducted - User: {user_id}, Feature: {feature_type}, Quality: {quality}, Cost: {cost}, Balance Before: {balance_before}, Balance After: {balance_after}")
+    
     return reservation_id
 
 async def complete_reservation(
     reservation_id: str,
     db: Session
 ):
+    """
+    Mark reservation as completed. Credits were already deducted when job was created.
+    """
     reservation = db.query(CreditReservation).filter(
         CreditReservation.id == reservation_id
     ).first()
@@ -60,32 +78,7 @@ async def complete_reservation(
     if reservation.status == ReservationStatus.COMPLETED:
         return
     
-    # Deduct credits
-    user = db.query(User).filter(User.id == reservation.user_id).first()
-    if not user:
-        return
-    
-    # Get balance before deduction
-    balance_before = float(user.credits) if user.credits else 0.0
-    
-    # Deduct credits
-    user.credits -= reservation.amount
-    balance_after = float(user.credits)
-    
-    # Create CreditTransaction for deduction
-    transaction = CreditTransaction(
-        id=str(uuid.uuid4()),
-        user_id=user.id,
-        transaction_type="DEDUCTION",  # Database enum: DEDUCTION
-        amount=-reservation.amount,  # Negative amount for deduction
-        balance_before=balance_before,
-        balance_after=balance_after,
-        description=f"Video generation completed - Reservation {reservation_id}",
-        reference_id=reservation_id
-    )
-    db.add(transaction)
-    
-    # Update reservation
+    # Update reservation status to completed (credits already deducted)
     reservation.status = ReservationStatus.COMPLETED
     reservation.completed_at = datetime.utcnow()
     
@@ -97,8 +90,8 @@ async def release_reservation(
     reason: str = "Job failed or cancelled"
 ):
     """
-    Release a credit reservation without deducting credits.
-    Used when job fails or is cancelled.
+    Refund credits when job fails or is cancelled.
+    Credits were deducted when job was created, so we need to refund them.
     """
     reservation = db.query(CreditReservation).filter(
         CreditReservation.id == reservation_id
@@ -107,29 +100,35 @@ async def release_reservation(
     if not reservation:
         return
     
-    # If already completed, don't release
+    # If already completed, don't refund
     if reservation.status == ReservationStatus.COMPLETED:
         return
+    
+    # Refund credits to user
+    user = db.query(User).filter(User.id == reservation.user_id).first()
+    if not user:
+        return
+    
+    balance_before = float(user.credits) if user.credits else 0.0
+    user.credits += reservation.amount  # Refund the amount
+    balance_after = float(user.credits)
+    
+    # Create CreditTransaction for refund
+    transaction = CreditTransaction(
+        id=str(uuid.uuid4()),
+        user_id=user.id,
+        transaction_type="REFUND",
+        amount=reservation.amount,  # Positive amount for refund
+        balance_before=balance_before,
+        balance_after=balance_after,
+        description=f"Job failed/cancelled - {reason} - Reservation {reservation_id}",
+        reference_id=reservation_id
+    )
+    db.add(transaction)
     
     # Update reservation status to CANCELLED
     reservation.status = ReservationStatus.CANCELLED
     reservation.completed_at = datetime.utcnow()
-    
-    # Optionally create a transaction record for tracking
-    user = db.query(User).filter(User.id == reservation.user_id).first()
-    if user:
-        balance = float(user.credits) if user.credits else 0.0
-        transaction = CreditTransaction(
-            id=str(uuid.uuid4()),
-            user_id=user.id,
-            transaction_type="RELEASE",  # Database enum: RELEASE
-            amount=0.0,  # No amount change, just release
-            balance_before=balance,
-            balance_after=balance,
-            description=f"Reservation released - {reason} - Reservation {reservation_id}",
-            reference_id=reservation_id
-        )
-        db.add(transaction)
     
     db.commit()
 

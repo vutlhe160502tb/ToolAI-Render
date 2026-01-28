@@ -58,10 +58,29 @@ npm install
 
 1. Tạo file `.env` trong `backend/`:
 ```env
+# Database
 DATABASE_URL=postgresql://user:password@localhost:5432/ai_dancing
+
+# Backend Configuration
 BACKEND_URL=http://localhost:8000
 SECRET_KEY=your-secret-key-here
+ENV=development
+
+# SePay QR Code Payment Integration (REQUIRED)
+SEPAY_API_URL=https://qr-moniter.up.railway.app
+CLIENT_WEBHOOK_URL=http://localhost:8000/api/payments/webhook
+WEBHOOK_SECRET_KEY=your-webhook-secret-key
+
+# Payment Timeout (optional, default: 30 minutes)
+PAYMENT_TIMEOUT_MINUTES=30
 ```
+
+**Lưu ý quan trọng về SePay:**
+- `SEPAY_API_URL`: URL của SePay payment service (mặc định: https://qr-moniter.up.railway.app)
+- `CLIENT_WEBHOOK_URL`: URL mà SePay sẽ gọi khi thanh toán thành công
+  - Development: Sử dụng localhost với ngrok/tunnel để expose port
+  - Production: Phải là URL public accessible (ví dụ: https://yourdomain.com/api/payments/webhook)
+- `WEBHOOK_SECRET_KEY`: Secret key để verify webhook signature (phải match với SePay config)
 
 2. Setup database:
 ```bash

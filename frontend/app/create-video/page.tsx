@@ -1,8 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import Header from '@/components/Header';
-import { Upload, Video, Loader2, RotateCcw, Trash2, Image as ImageIcon, ChevronDown } from 'lucide-react';
+import { Upload, Video, Loader2, RotateCcw, Trash2, Image as ImageIcon, ChevronDown, ArrowRight } from 'lucide-react';
 import axios from 'axios';
 import LoadingPreview from '@/components/LoadingPreview';
 import VideoDurationInfo from '@/components/VideoDurationInfo';
@@ -15,6 +15,10 @@ export default function CreateVideoPage() {
   const [file, setFile] = useState<File | null>(null);
   const [prompt, setPrompt] = useState('');
   const [isAdvancedOpen, setIsAdvancedOpen] = useState(false);
+  const [quality, setQuality] = useState('720P');
+  const [qualityCost, setQualityCost] = useState(1);
+  const [isQualityOpen, setIsQualityOpen] = useState(false);
+  const qualityRef = useRef<HTMLDivElement>(null);
   
   const {
     session,
@@ -63,6 +67,7 @@ export default function CreateVideoPage() {
     const formData = new FormData();
     if (file) formData.append('file', file);
     if (prompt) formData.append('prompt', prompt);
+    if (quality) formData.append('quality', quality);
     formData.append('user_id', user_id);
 
     try {
@@ -70,6 +75,12 @@ export default function CreateVideoPage() {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
       setJobId(response.data.job_id);
+      
+      // Trigger credits update event for real-time update with amount to deduct
+      window.dispatchEvent(new CustomEvent('credits-updated', {
+        detail: { amount: qualityCost }
+      }));
+      
       startPolling(response.data.job_id);
     } catch (error: any) {
       if (error.response?.status === 402) {
@@ -124,6 +135,12 @@ export default function CreateVideoPage() {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
       setJobId(response.data.job_id);
+      
+      // Trigger credits update event for real-time update with amount to deduct
+      window.dispatchEvent(new CustomEvent('credits-updated', {
+        detail: { amount: qualityCost }
+      }));
+      
       startPolling(response.data.job_id);
     } catch (error: any) {
       if (error.response?.status === 402) {
@@ -182,6 +199,52 @@ export default function CreateVideoPage() {
                       )}
                     </label>
                   </div>
+                </div>
+
+                {/* Quality Selector */}
+                <div className="mb-4 sm:mb-6 relative w-full min-w-0" ref={qualityRef}>
+                  <div 
+                    className="flex items-center justify-between bg-[#252525] rounded-[20px] px-3 sm:px-4 py-2 cursor-pointer hover:bg-[#3a3a3a] transition-all relative overflow-hidden w-full min-w-0"
+                    onClick={() => setIsQualityOpen(!isQualityOpen)}
+                  >
+                    <div className="flex flex-col min-w-0 flex-1">
+                      <label className="text-white mb-1 break-words" style={{ fontSize: 'clamp(0.625rem, 3vw, 0.875rem)' }}>Chất lượng</label>
+                      <span className="text-white font-semibold break-words" style={{ fontSize: 'clamp(0.625rem, 3vw, 0.875rem)' }}>{quality}</span>
+                    </div>
+                    <ArrowRight className="text-gray-400 shrink-0 ml-2" style={{ width: 'clamp(0.625rem, 3vw, 1rem)', height: 'clamp(0.625rem, 3vw, 1rem)' }} />
+                  </div>
+                  
+                  {/* Quality Dropdown */}
+                  {isQualityOpen && (
+                    <div className="absolute left-full top-0 ml-2 bg-[#1a1a1a] rounded-[20px] p-1.5 z-10 w-[170px]">
+                      <div
+                        onClick={() => {
+                          setQuality('720P');
+                          setQualityCost(1);
+                          setIsQualityOpen(false);
+                        }}
+                        className={`p-2 rounded-[10px] cursor-pointer transition-all mb-1.5 ${
+                          quality === '720P' ? 'bg-[#2a2a2a]' : 'bg-[#1a1a1a] hover:bg-[#2a2a2a]'
+                        }`}
+                      >
+                        <div className="text-white text-sm font-semibold mb-0.5">720P</div>
+                        <div className="text-gray-400 text-xs">Tốn 1 coin</div>
+                      </div>
+                      <div
+                        onClick={() => {
+                          setQuality('1080P');
+                          setQualityCost(2);
+                          setIsQualityOpen(false);
+                        }}
+                        className={`p-2 rounded-[10px] cursor-pointer transition-all ${
+                          quality === '1080P' ? 'bg-[#2a2a2a]' : 'bg-[#1a1a1a] hover:bg-[#2a2a2a]'
+                        }`}
+                      >
+                        <div className="text-white text-sm font-semibold mb-0.5">1080P</div>
+                        <div className="text-gray-400 text-xs">Tốn 2 coin</div>
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 {/* Advanced Mode */}
@@ -245,7 +308,7 @@ export default function CreateVideoPage() {
                     <>
                       <Video className="w-5 h-5 shrink-0" />
                       <span className="break-words whitespace-nowrap" style={{ fontSize: 'clamp(0.75rem, 3vw, 1rem)' }}>Tạo</span>
-                      <span className="shrink-0 whitespace-nowrap" style={{ fontSize: 'clamp(0.625rem, 3vw, 0.875rem)' }}>1 Coin</span>
+                      <span className="shrink-0 whitespace-nowrap" style={{ fontSize: 'clamp(0.625rem, 3vw, 0.875rem)' }}>{qualityCost} Coin</span>
                     </>
                   )}
                 </button>

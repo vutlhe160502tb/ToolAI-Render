@@ -57,15 +57,21 @@ export default function Header() {
 
   // Listen for credits update event
   useEffect(() => {
-    const handleCreditsUpdate = () => {
+    const handleCreditsUpdate = (event: any) => {
+      // Optimistic update: trừ credits ngay lập tức nếu có thông tin
+      if (event.detail && event.detail.amount && credits !== null) {
+        const newCredits = Math.max(0, credits - event.detail.amount);
+        setCredits(newCredits);
+      }
+      // Sau đó fetch từ server để sync chính xác
       fetchCredits();
     };
     
-    window.addEventListener('credits-updated', handleCreditsUpdate);
+    window.addEventListener('credits-updated', handleCreditsUpdate as EventListener);
     return () => {
-      window.removeEventListener('credits-updated', handleCreditsUpdate);
+      window.removeEventListener('credits-updated', handleCreditsUpdate as EventListener);
     };
-  }, [fetchCredits]);
+  }, [fetchCredits, credits]);
 
   // Close dropdown when clicking outside
   useEffect(() => {

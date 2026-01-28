@@ -30,6 +30,7 @@ export default function ProductIntroAudioPage() {
           description: 'Chọn audio'
         }
       ]}
+      hasQuality={true}
       coinCost={1}
     />
   );

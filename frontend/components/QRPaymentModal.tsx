@@ -5,6 +5,7 @@ import { X, Loader2, CheckCircle, XCircle } from 'lucide-react';
 import Image from 'next/image';
 import axios from 'axios';
 import { useSession } from 'next-auth/react';
+import { useToast } from '@/contexts/ToastContext';
 
 interface QRPaymentModalProps {
   package: {
@@ -17,12 +18,15 @@ interface QRPaymentModalProps {
 
 export default function QRPaymentModal({ package: pkg, onClose }: QRPaymentModalProps) {
   const { data: session } = useSession();
+  const { showToast } = useToast();
   const [transactionId, setTransactionId] = useState<string | null>(null);
-  const [paymentStatus, setPaymentStatus] = useState<'pending' | 'completed' | 'failed' | 'loading'>('loading');
-  const [qrCodeUrl, setQrCodeUrl] = useState('https://img.vietqr.io/image/vietinbank-113366668888-compact.jpg');
-  const [qrContent, setQrContent] = useState<string>('');
+  const [paymentCode, setPaymentCode] = useState<string | null>(null);
+  const [paymentStatus, setPaymentStatus] = useState<'pending' | 'completed' | 'failed' | 'expired' | 'cancelled' | 'loading'>('loading');
+  const [qrCodeUrl, setQrCodeUrl] = useState<string | null>(null);
   const [userId, setUserId] = useState<string | null>(null);
   const pollingIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const orderCreatedRef = useRef<boolean>(false); // Prevent creating multiple orders
+  const hasCheckedExistingPaymentRef = useRef<boolean>(false); // Track if we've checked for existing payment
   
   // Lấy user_id từ session (đã được lưu từ backend auth)
   const session_user_id = (session?.user as any)?.id;
@@ -76,7 +80,7 @@ export default function QRPaymentModal({ package: pkg, onClose }: QRPaymentModal
     }
   }, [session, userId, user_email, onClose]);
 
-  const startPolling = useCallback((txnId: string) => {
+  const startPolling = useCallback((identifier: string) => {
     // Clear any existing interval
     if (pollingIntervalRef.current) {
       clearInterval(pollingIntervalRef.current);
@@ -85,12 +89,18 @@ export default function QRPaymentModal({ package: pkg, onClose }: QRPaymentModal
     // Poll every 3 seconds
     pollingIntervalRef.current = setInterval(async () => {
       try {
-        const response = await axios.get(`/api/payments/${txnId}/status`);
+        const response = await axios.get(`/api/payments/${identifier}/status`);
         const { status } = response.data;
 
-        setPaymentStatus(status);
+        // Map backend status to frontend status
+        const mappedStatus = status === 'completed' ? 'completed' : 
+                            status === 'failed' ? 'failed' :
+                            status === 'expired' ? 'expired' :
+                            status === 'cancelled' ? 'cancelled' : 'pending';
+        
+        setPaymentStatus(mappedStatus);
 
-        if (status === 'completed') {
+        if (mappedStatus === 'completed') {
           // Stop polling
           if (pollingIntervalRef.current) {
             clearInterval(pollingIntervalRef.current);
@@ -100,12 +110,15 @@ export default function QRPaymentModal({ package: pkg, onClose }: QRPaymentModal
           // Trigger credits update event for real-time update
           window.dispatchEvent(new CustomEvent('credits-updated'));
 
+          // Show success toast notification
+          showToast('Thanh toán thành công! Coin đã được cập nhật.', 'success');
+
           // Show success and close after 2 seconds
           setTimeout(() => {
             onClose();
           }, 2000);
-        } else if (status === 'failed') {
-          // Stop polling
+        } else if (mappedStatus === 'failed' || mappedStatus === 'expired' || mappedStatus === 'cancelled') {
+          // Stop polling for failed/expired/cancelled
           if (pollingIntervalRef.current) {
             clearInterval(pollingIntervalRef.current);
             pollingIntervalRef.current = null;
@@ -116,9 +129,66 @@ export default function QRPaymentModal({ package: pkg, onClose }: QRPaymentModal
         // Continue polling even on error (network issues)
       }
     }, 3000); // Poll every 3 seconds
-  }, [onClose]);
+  }, [onClose, showToast]);
+
+  // Check for existing pending/completed payment before creating new one
+  const checkExistingPayment = useCallback(async (user_id: string) => {
+    try {
+      const response = await axios.get(`/api/payments/history`, {
+        params: { user_id, limit: 10, offset: 0 }
+      });
+      const payments = response.data?.payments || [];
+      
+      // Check if there's a recent pending or completed payment for the same package
+      const recentPayment = payments.find((payment: any) => {
+        const isSamePackage = payment.coins === pkg.coins && payment.amount === pkg.price;
+        const isRecent = new Date(payment.created_at) > new Date(Date.now() - 30 * 60 * 1000); // Within 30 minutes
+        const isPendingOrCompleted = payment.status === 'pending' || payment.status === 'completed';
+        return isSamePackage && isRecent && isPendingOrCompleted;
+      });
+
+      if (recentPayment) {
+        console.log('Found existing payment:', recentPayment);
+        // Use existing payment
+        if (recentPayment.payment_code) {
+          setPaymentCode(recentPayment.payment_code);
+        }
+        setTransactionId(recentPayment.transaction_id);
+        if (recentPayment.qr_code_url) {
+          setQrCodeUrl(recentPayment.qr_code_url);
+        }
+        
+        if (recentPayment.status === 'completed') {
+          setPaymentStatus('completed');
+          showToast('Giao dịch này đã được thanh toán thành công!', 'success');
+          setTimeout(() => {
+            onClose();
+          }, 2000);
+        } else {
+          setPaymentStatus('pending');
+          // Start polling for existing payment
+          const identifier = recentPayment.payment_code || recentPayment.transaction_id;
+          if (identifier) {
+            startPolling(identifier);
+          }
+        }
+        orderCreatedRef.current = true; // Mark as handled to prevent creating new order
+        return true; // Found existing payment
+      }
+      return false; // No existing payment found
+    } catch (error) {
+      console.error('Error checking existing payment:', error);
+      return false;
+    }
+  }, [pkg, startPolling, onClose, showToast]);
 
   const createPaymentOrder = useCallback(async () => {
+    // Prevent creating order if already created
+    if (orderCreatedRef.current) {
+      console.log('Order already created, skipping...');
+      return;
+    }
+
     // Validate user_id before making request
     if (!userId) {
       console.error('User ID is missing, userId:', userId);
@@ -152,30 +222,51 @@ export default function QRPaymentModal({ package: pkg, onClose }: QRPaymentModal
         user_id: userId,
       });
 
-      const { transaction_id, qr_code_url, qr_content } = response.data;
+      const { transaction_id, payment_code, qr_code_url, qrUrl } = response.data;
       
-      setTransactionId(transaction_id);
-      if (qr_code_url) {
-        setQrCodeUrl(qr_code_url);
+      // SePay returns payment_code and qrUrl (required)
+      if (!payment_code || !qrUrl) {
+        throw new Error('SePay API không trả về payment_code hoặc qrUrl');
       }
-      setQrContent(qr_content || `NAPCOIN${transaction_id}`);
+      
+      // Store both payment_code (for SePay) and transaction_id (for compatibility)
+      setPaymentCode(payment_code);
+      setTransactionId(transaction_id || payment_code);
+      
+      // Use SePay qrUrl (required)
+      setQrCodeUrl(qrUrl);
       setPaymentStatus('pending');
       
-      // Start polling for payment status
-      startPolling(transaction_id);
+      // Mark order as created
+      orderCreatedRef.current = true;
+      
+      // Start polling for payment status using payment_code
+      startPolling(payment_code);
     } catch (error: any) {
       console.error('Error creating payment order:', error);
-      alert('Lỗi tạo đơn thanh toán: ' + (error.response?.data?.message || error.message));
+      const errorMessage = error.response?.data?.detail || error.response?.data?.message || error.message;
+      alert('Lỗi tạo đơn thanh toán: ' + errorMessage);
       setPaymentStatus('failed');
+      // Reset orderCreatedRef on error so user can retry
+      orderCreatedRef.current = false;
     }
   }, [pkg, startPolling, userId, onClose]);
 
   // Create payment order when modal opens AND userId is available
   useEffect(() => {
-    // Only create order if we have both package and userId
+    // Only check/create order if we have both package and userId
     if (pkg && userId) {
-      console.log('Creating payment order with userId:', userId);
-      createPaymentOrder();
+      // First, check for existing payment
+      if (!hasCheckedExistingPaymentRef.current) {
+        hasCheckedExistingPaymentRef.current = true;
+        checkExistingPayment(userId).then((hasExisting) => {
+          // If no existing payment found, create new one
+          if (!hasExisting && !orderCreatedRef.current) {
+            console.log('No existing payment found, creating new order with userId:', userId);
+            createPaymentOrder();
+          }
+        });
+      }
     } else if (pkg && !userId) {
       // Still loading userId, keep loading state
       console.log('Waiting for userId...');
@@ -187,8 +278,11 @@ export default function QRPaymentModal({ package: pkg, onClose }: QRPaymentModal
       if (pollingIntervalRef.current) {
         clearInterval(pollingIntervalRef.current);
       }
+      // Reset refs when modal closes
+      orderCreatedRef.current = false;
+      hasCheckedExistingPaymentRef.current = false;
     };
-  }, [pkg, userId, createPaymentOrder]);
+  }, [pkg, userId, createPaymentOrder, checkExistingPayment]);
 
   const handleClose = () => {
     // Stop polling before closing
@@ -196,46 +290,12 @@ export default function QRPaymentModal({ package: pkg, onClose }: QRPaymentModal
       clearInterval(pollingIntervalRef.current);
       pollingIntervalRef.current = null;
     }
+    // Reset refs when closing
+    orderCreatedRef.current = false;
+    hasCheckedExistingPaymentRef.current = false;
     onClose();
   };
 
-  // Check if test webhook is enabled (development only)
-  const isTestWebhookEnabled = typeof window !== 'undefined' && (
-    window.location.hostname === 'localhost' || 
-    window.location.hostname === '127.0.0.1' ||
-    process.env.NEXT_PUBLIC_ENABLE_TEST_WEBHOOK === 'true'
-  );
-
-  const handleTestWebhook = useCallback(async () => {
-    if (!transactionId) {
-      alert('Chưa có transaction ID');
-      return;
-    }
-
-    if (!isTestWebhookEnabled) {
-      alert('Tính năng test chỉ có trong môi trường development');
-      return;
-    }
-
-    try {
-      const response = await axios.post('/api/payments/test-webhook', {
-        transaction_id: transactionId
-      });
-
-      if (response.data.status === 'completed' || response.data.status === 'already_completed') {
-        // Trigger credits update event for real-time update
-        window.dispatchEvent(new CustomEvent('credits-updated'));
-        
-        // Success - polling will detect the change automatically
-        alert('✅ Test webhook thành công! Coin đã được cộng.');
-      } else {
-        alert('⚠️ Webhook được xử lý nhưng status: ' + response.data.status);
-      }
-    } catch (error: any) {
-      console.error('Test webhook error:', error);
-      alert('❌ Lỗi: ' + (error.response?.data?.detail || error.message));
-    }
-  }, [transactionId, isTestWebhookEnabled]);
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
@@ -270,8 +330,19 @@ export default function QRPaymentModal({ package: pkg, onClose }: QRPaymentModal
             </div>
           )}
 
+          {/* Error State - No QR Code */}
+          {paymentStatus === 'failed' && !qrCodeUrl && (
+            <div className="flex flex-col items-center justify-center py-8">
+              <XCircle className="w-12 h-12 text-red-500 mb-4" />
+              <p className="text-red-600 font-medium mb-2">Không thể tạo đơn thanh toán</p>
+              <p className="text-gray-600 text-sm text-center">
+                Vui lòng thử lại sau hoặc liên hệ hỗ trợ
+              </p>
+            </div>
+          )}
+
           {/* QR Code */}
-          {paymentStatus !== 'loading' && (
+          {paymentStatus !== 'loading' && qrCodeUrl && (
             <>
               <div className="flex justify-center bg-gray-100 p-4 rounded-lg">
                 <Image
@@ -283,15 +354,18 @@ export default function QRPaymentModal({ package: pkg, onClose }: QRPaymentModal
                 />
               </div>
 
+              {/* SePay Payment Info */}
               <div className="bg-gray-50 rounded-lg p-4 space-y-2 text-sm">
                 <div className="text-gray-700">
-                  <span className="font-semibold">Ngân hàng:</span> VietinBank
+                  <span className="font-semibold">Phương thức:</span> SePay QR Code
                 </div>
-                <div className="text-gray-700">
-                  <span className="font-semibold">Số tài khoản:</span> 113366668888
-                </div>
-                <div className="text-gray-700">
-                  <span className="font-semibold">Nội dung:</span> {qrContent || `NAPCOIN${pkg.id}`}
+                {paymentCode && (
+                  <div className="text-gray-700">
+                    <span className="font-semibold">Mã thanh toán:</span> {paymentCode}
+                  </div>
+                )}
+                <div className="text-gray-500 text-xs mt-2">
+                  Quét QR code bằng app ngân hàng để thanh toán. QR code sẽ hết hạn sau 30 phút.
                 </div>
               </div>
 
@@ -317,20 +391,24 @@ export default function QRPaymentModal({ package: pkg, onClose }: QRPaymentModal
                 </div>
               )}
 
-              <div className="text-center text-sm text-gray-500">
-                Vui lòng quét QR code hoặc chuyển khoản theo thông tin trên
-              </div>
+              {paymentStatus === 'expired' && (
+                <div className="flex items-center justify-center gap-2 text-orange-600 bg-orange-50 rounded-lg p-3">
+                  <XCircle className="w-5 h-5" />
+                  <span className="text-sm font-medium">QR code đã hết hạn (30 phút)</span>
+                </div>
+              )}
 
-              {/* Test Webhook Button - Development Only */}
-              {isTestWebhookEnabled && paymentStatus === 'pending' && (
-                <button
-                  onClick={handleTestWebhook}
-                  className="w-full mt-2 px-4 py-2 bg-yellow-500 hover:bg-yellow-600 text-white rounded-lg font-medium transition-colors flex items-center justify-center gap-2"
-                  title="Test webhook - Development only"
-                >
-                  <span>🧪</span>
-                  <span>Test Payment (Mock Webhook)</span>
-                </button>
+              {paymentStatus === 'cancelled' && (
+                <div className="flex items-center justify-center gap-2 text-gray-600 bg-gray-50 rounded-lg p-3">
+                  <XCircle className="w-5 h-5" />
+                  <span className="text-sm font-medium">Thanh toán đã bị hủy</span>
+                </div>
+              )}
+
+              {paymentStatus === 'pending' && (
+                <div className="text-center text-sm text-gray-500">
+                  Vui lòng quét QR code bằng app ngân hàng để thanh toán
+                </div>
               )}
             </>
           )}

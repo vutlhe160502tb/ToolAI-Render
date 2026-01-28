@@ -31,6 +31,7 @@ export default function CharacterSwap2Page() {
           description: 'Chọn file'
         }
       ]}
+      hasQuality={true}
       coinCost={1}
     />
   );

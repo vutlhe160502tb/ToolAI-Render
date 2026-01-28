@@ -9,7 +9,9 @@ import logging
 import hmac
 import hashlib
 import json
+import requests
 from datetime import datetime, timedelta, timezone
+from urllib.parse import urlparse
 
 # Setup logger
 logger = logging.getLogger(__name__)
@@ -85,72 +87,232 @@ class PaymentService:
         # Generate unique transaction_id
         transaction_id = f"TXN-{int(time.time())}-{random.randint(1000, 9999)}"
         
-        # Create Payment record
-        qr_code_url = "https://img.vietqr.io/image/vietinbank-113366668888-compact.jpg"
-        qr_content = f"NAPCOIN{transaction_id}"
-        payment = Payment(
-            id=str(uuid.uuid4()),
-            user_id=user_id,
-            transaction_id=transaction_id,
-            payment_method="BANK_TRANSFER_QR",  # Use valid enum value
-            amount=amount,
-            coins=credits,  # Use coins to match DB column
-            status=PaymentStatus.PENDING,
-            account_number="113366668888",  # Changed from bank_account
-            bank_name="VietinBank",
-            qr_code_url=qr_code_url,  # Changed from qr_code
-            transfer_content=qr_content  # Set transfer content
-        )
+        # Get SePay API URL from environment
+        sepay_api_url = os.getenv("SEPAY_API_URL", "https://qr-moniter.up.railway.app")
+        client_webhook_url = os.getenv("CLIENT_WEBHOOK_URL", "http://localhost:8000/api/payments/webhook")
+        
+        # Validate SePay API URL
+        if not sepay_api_url or sepay_api_url.strip() == "":
+            raise Exception("SEPAY_API_URL không được cấu hình trong environment variables")
+        
+        # Validate CLIENT_WEBHOOK_URL format
+        if not client_webhook_url or client_webhook_url.strip() == "":
+            raise Exception("CLIENT_WEBHOOK_URL không được cấu hình trong environment variables")
+        
+        # Validate URL format
+        try:
+            parsed_url = urlparse(client_webhook_url)
+            if not parsed_url.scheme or not parsed_url.netloc:
+                raise ValueError("Invalid URL format")
+            
+            # Check if URL is localhost (not accessible from internet)
+            env = os.getenv("ENV", "development").lower()
+            is_localhost = parsed_url.hostname in ["localhost", "127.0.0.1"] or \
+                          (parsed_url.hostname and (parsed_url.hostname.startswith("192.168.") or parsed_url.hostname.startswith("10.")))
+            
+            if is_localhost:
+                if env == "production":
+                    raise Exception(
+                        f"CLIENT_WEBHOOK_URL không thể là localhost trong production. "
+                        f"Hiện tại: {client_webhook_url}. "
+                        f"Vui lòng sử dụng public URL (ví dụ: https://yourdomain.com/api/payments/webhook) hoặc ngrok tunnel."
+                    )
+                else:
+                    # Development mode: warn but don't fail (SePay API will reject it though)
+                    logger.warning(
+                        f"CLIENT_WEBHOOK_URL đang sử dụng localhost: {client_webhook_url}. "
+                        f"SePay API không thể gọi localhost từ internet. "
+                        f"Vui lòng sử dụng ngrok hoặc public URL. "
+                        f"Ví dụ: ngrok http 8000 -> https://abc123.ngrok.io/api/payments/webhook"
+                    )
+        except ValueError as e:
+            raise Exception(f"CLIENT_WEBHOOK_URL không hợp lệ: {client_webhook_url}. Lỗi: {str(e)}")
+        
+        # Log webhook URL for debugging
+        logger.info(f"Using SePay API: {sepay_api_url}, Webhook URL: {client_webhook_url}")
+        
+        # Prepare SePay API request
+        product_code = f"PKG_{package_id}"
+        customer_code = user_id
+        
+        # Call SePay API to create payment order (REQUIRED - no fallback)
+        try:
+            logger.info(f"Calling SePay API: {sepay_api_url}/payments with productCode={product_code}, amount={int(amount)}")
+            
+            sepay_response = requests.post(
+                f"{sepay_api_url}/payments",
+                json={
+                    "productCode": product_code,
+                    "customerCode": customer_code,
+                    "amount": int(amount),  # SePay expects integer VNĐ
+                    "clientWebhookUrl": client_webhook_url
+                },
+                headers={"Content-Type": "application/json"},
+                timeout=10
+            )
+            
+            logger.info(f"SePay API response status: {sepay_response.status_code}")
+            
+            # Accept 2xx status codes (200, 201, etc.)
+            if not (200 <= sepay_response.status_code < 300):
+                error_text = sepay_response.text
+                logger.error(f"SePay API failed: status={sepay_response.status_code}, response={error_text}")
+                
+                # Parse error message for better user feedback
+                try:
+                    error_data = sepay_response.json()
+                    error_message = error_data.get("message", error_text)
+                    if isinstance(error_message, list):
+                        error_message = ", ".join(error_message)
+                    
+                    # Check if it's a webhook URL validation error
+                    if "clientWebhookUrl" in error_text.lower() or "webhook" in error_text.lower():
+                        raise Exception(
+                            f"Lỗi cấu hình webhook URL: {error_message}. "
+                            f"CLIENT_WEBHOOK_URL hiện tại: {client_webhook_url}. "
+                            f"Vui lòng kiểm tra:\n"
+                            f"1. URL phải là public accessible (không phải localhost)\n"
+                            f"2. Sử dụng ngrok hoặc tunnel để expose localhost trong development\n"
+                            f"3. URL phải có format hợp lệ (bắt đầu bằng http:// hoặc https://)"
+                        )
+                    else:
+                        raise Exception(f"SePay API lỗi: {error_message}")
+                except json.JSONDecodeError:
+                    # If response is not JSON, use raw text
+                    raise Exception(f"SePay API returned status {sepay_response.status_code}: {error_text}")
+            
+            # Parse response (could be 200, 201, etc.)
+            try:
+                sepay_data = sepay_response.json()
+            except json.JSONDecodeError as e:
+                logger.error(f"SePay API response is not valid JSON: {sepay_response.text}")
+                raise Exception(f"SePay API response không phải JSON hợp lệ: {str(e)}")
+            
+            payment_code = sepay_data.get("paymentCode")
+            qr_url = sepay_data.get("qrUrl")
+            
+            if not payment_code or not qr_url:
+                logger.error(f"SePay API response missing required fields: {sepay_data}")
+                raise Exception(f"SePay API response invalid: missing paymentCode or qrUrl")
+            
+            logger.info(f"SePay order created successfully: payment_code={payment_code}, qr_url={qr_url}")
+            
+            # Calculate expired_at (30 minutes from now)
+            from datetime import timedelta
+            expired_at = datetime.now(timezone.utc) + timedelta(minutes=30)
+            
+            # Create Payment record with SePay data
+            payment = Payment(
+                id=str(uuid.uuid4()),
+                user_id=user_id,
+                transaction_id=transaction_id,
+                payment_code=payment_code,  # SePay payment code
+                payment_method="SEPAY_QR",
+                amount=amount,
+                coins=credits,
+                status=PaymentStatus.PENDING,
+                qr_code_url=qr_url,  # SePay QR URL
+                transfer_content=f"PKG_{package_id}",  # Product code as transfer content
+                product_code=product_code,  # SePay product code
+                customer_code=customer_code,  # SePay customer code
+                expired_at=expired_at,  # QR code expiration (30 minutes)
+                payment_metadata=json.dumps({
+                    "sepay_payment_code": payment_code,
+                    "product_code": product_code,
+                    "customer_code": customer_code
+                })
+            )
+        except requests.exceptions.RequestException as e:
+            # Network/connection errors
+            logger.error(f"SePay API connection error: {str(e)}")
+            raise Exception(f"Không thể kết nối đến SePay API: {str(e)}")
+        except Exception as e:
+            # Other errors (invalid response, missing fields, etc.)
+            logger.error(f"SePay API error: {str(e)}")
+            raise Exception(f"Lỗi khi tạo payment order từ SePay: {str(e)}")
         
         db.add(payment)
         db.commit()
         db.refresh(payment)
         
-        return {
+        # Return response (compatible with both SePay and fallback)
+        response = {
             "payment_id": payment.id,
             "transaction_id": transaction_id,
             "qr_code_url": payment.qr_code_url,
-            "qr_content": qr_content,
-            "bank_account": payment.account_number,
-            "bank_name": payment.bank_name,
+            "qr_content": payment.transfer_content or f"NAPCOIN{transaction_id}",
             "amount": amount,
             "credits": credits,
             "status": payment.status.value
         }
+        
+        # Add SePay specific fields if available
+        if payment.payment_code:
+            response["payment_code"] = payment.payment_code
+            response["qrUrl"] = payment.qr_code_url  # SePay format
+        if payment.expired_at:
+            response["expired_at"] = payment.expired_at.isoformat()
+        
+        return response
     
     @staticmethod
     def process_webhook(
-        transaction_id: str,
-        amount: float,
-        status: str,
+        transaction_id: str = None,
+        payment_code: str = None,
+        amount: float = None,
+        status: str = None,
         transfer_content: str = None,
         paid_at: str = None,
         timestamp: str = None,
         signature: str = None,
+        product_code: str = None,
+        customer_code: str = None,
         db: Session = None
     ):
         # Log webhook received
-        logger.info(f"Webhook received: transaction_id={transaction_id}, amount={amount}, status={status}, transfer_content={transfer_content}")
+        logger.info(f"Webhook received: transaction_id={transaction_id}, payment_code={payment_code}, amount={amount}, status={status}")
         
         try:
-            # Find payment by transaction_id
-            payment = db.query(Payment).filter(
-                Payment.transaction_id == transaction_id
-            ).first()
+            # Find payment by payment_code (SePay) or transaction_id (fallback)
+            payment = None
+            if payment_code:
+                payment = db.query(Payment).filter(
+                    Payment.payment_code == payment_code
+                ).first()
+                if not payment:
+                    logger.warning(f"Payment not found by payment_code: {payment_code}, trying transaction_id")
+            
+            # Fallback to transaction_id if payment_code not found
+            if not payment and transaction_id:
+                payment = db.query(Payment).filter(
+                    Payment.transaction_id == transaction_id
+                ).first()
             
             if not payment:
-                logger.error(f"Payment not found: transaction_id={transaction_id}")
-                raise ValueError(f"Payment not found for transaction_id: {transaction_id}")
+                error_msg = f"Payment not found: payment_code={payment_code}, transaction_id={transaction_id}"
+                logger.error(error_msg)
+                raise ValueError(error_msg)
             
-            # Check payment timeout (default 30 minutes)
-            if payment.created_at:
+            # Check payment expiration using expired_at (SePay) or created_at + timeout (fallback)
+            now = datetime.now(timezone.utc)
+            if payment.expired_at:
+                # Use expired_at from SePay
+                if now > payment.expired_at:
+                    logger.warning(f"Payment expired: payment_code={payment_code or transaction_id}, expired_at={payment.expired_at}")
+                    raise ValueError(f"Payment expired at {payment.expired_at}")
+            elif payment.created_at:
+                # Fallback: check timeout from created_at
                 timeout_minutes = int(os.getenv("PAYMENT_TIMEOUT_MINUTES", "30"))
-                # Use timezone-aware datetime to match payment.created_at (which has timezone)
-                now = datetime.now(timezone.utc) if payment.created_at.tzinfo else datetime.now()
                 time_diff = now - payment.created_at
                 if time_diff > timedelta(minutes=timeout_minutes):
                     logger.warning(f"Payment expired: transaction_id={transaction_id}, age={time_diff}")
                     raise ValueError(f"Payment expired (timeout: {timeout_minutes} minutes)")
+            
+            # Update product_code and customer_code if provided in webhook
+            if product_code and not payment.product_code:
+                payment.product_code = product_code
+            if customer_code and not payment.customer_code:
+                payment.customer_code = customer_code
             
             # Check idempotency - prevent double processing
             if payment.status == PaymentStatus.COMPLETED:
@@ -162,22 +324,23 @@ class PaymentService:
                 }
             
             # Validate amount (allow small difference for rounding)
-            if abs(payment.amount - amount) > 0.01:
-                logger.error(f"Amount mismatch: transaction_id={transaction_id}, expected={payment.amount}, received={amount}")
+            if amount is not None and abs(payment.amount - amount) > 0.01:
+                logger.error(f"Amount mismatch: payment_code={payment_code or transaction_id}, expected={payment.amount}, received={amount}")
                 raise ValueError(
                     f"Amount mismatch. Expected: {payment.amount}, Received: {amount}"
                 )
             
-            # Validate transfer_content (if provided)
+            # Validate transfer_content/product_code (if provided)
             if transfer_content and payment.transfer_content:
                 if transfer_content != payment.transfer_content:
-                    logger.error(f"Transfer content mismatch: transaction_id={transaction_id}, expected={payment.transfer_content}, received={transfer_content}")
-                    raise ValueError(
-                        f"transfer_content mismatch. Expected: {payment.transfer_content}, Received: {transfer_content}"
-                    )
+                    logger.warning(f"Transfer content mismatch: payment_code={payment_code or transaction_id}, expected={payment.transfer_content}, received={transfer_content}")
+                    # Don't fail, just log warning for SePay compatibility
+            
+            # SePay uses "paid" status, old system uses "SUCCESS", "COMPLETED", "PAID"
+            is_paid = status and status.upper() in ["SUCCESS", "COMPLETED", "PAID"]
             
             # Process based on status
-            if status.upper() in ["SUCCESS", "COMPLETED", "PAID"]:
+            if is_paid:
                 # Update payment status
                 payment.status = PaymentStatus.COMPLETED
                 
@@ -211,31 +374,49 @@ class PaymentService:
                     db=db
                 )
                 
-                logger.info(f"Payment processed successfully: transaction_id={transaction_id}, credits_added={payment.coins}")
+                logger.info(f"Payment processed successfully: payment_code={payment_code or transaction_id}, credits_added={payment.coins}")
                 
                 return {
                     "message": "Payment processed successfully",
                     "transaction_id": transaction_id,
+                    "payment_code": payment_code,
                     "status": "completed",
                     "credits_added": payment.coins
                 }
+            elif status and status.upper() in ["EXPIRED", "CANCELLED"]:
+                # Handle SePay expired/cancelled status
+                if status.upper() == "EXPIRED":
+                    payment.status = PaymentStatus.FAILED
+                elif status.upper() == "CANCELLED":
+                    payment.status = PaymentStatus.CANCELLED
+                db.commit()
+                
+                logger.warning(f"Payment {status.lower()}: payment_code={payment_code or transaction_id}")
+                
+                return {
+                    "message": f"Payment {status.lower()}",
+                    "transaction_id": transaction_id,
+                    "payment_code": payment_code,
+                    "status": status.lower()
+                }
             else:
-                # Mark as failed
+                # Mark as failed for other statuses
                 payment.status = PaymentStatus.FAILED
                 db.commit()
                 
-                logger.warning(f"Payment failed: transaction_id={transaction_id}, status={status}")
+                logger.warning(f"Payment failed: payment_code={payment_code or transaction_id}, status={status}")
                 
                 return {
                     "message": "Payment failed",
                     "transaction_id": transaction_id,
+                    "payment_code": payment_code,
                     "status": "failed"
                 }
         except ValueError as e:
-            logger.error(f"Webhook validation error: transaction_id={transaction_id}, error={str(e)}")
+            logger.error(f"Webhook validation error: payment_code={payment_code or transaction_id}, error={str(e)}")
             raise
         except Exception as e:
-            logger.error(f"Webhook processing error: transaction_id={transaction_id}, error={str(e)}")
+            logger.error(f"Webhook processing error: payment_code={payment_code or transaction_id}, error={str(e)}")
             raise
     
     @staticmethod
@@ -256,48 +437,3 @@ class PaymentService:
             "updated_at": payment.updated_at.isoformat() if payment.updated_at else None
         }
     
-    @staticmethod
-    def simulate_webhook_success(
-        transaction_id: str,
-        db: Session
-    ):
-        """
-        DEVELOPMENT ONLY: Simulate successful webhook for testing.
-        
-        This method wraps PaymentService.process_webhook() to simulate
-        a successful payment from third-party payment observer.
-        
-        IMPORTANT:
-        - Only works in development environment (ENV != production)
-        - All business logic (status update, credit addition) goes through
-          PaymentService.process_webhook() - the CORE LOGIC
-        - This is just a convenience wrapper for testing
-        
-        Flow:
-        1. Get payment record to extract correct amount and transfer_content
-        2. Call process_webhook() with PAID status
-        3. Return result (same as real webhook)
-        """
-        # Get payment to extract correct data
-        payment = db.query(Payment).filter(
-            Payment.transaction_id == transaction_id
-        ).first()
-        
-        if not payment:
-            raise ValueError(f"Payment not found for transaction_id: {transaction_id}")
-        
-        # Simulate webhook payload with correct data from payment record
-        # This ensures we use the exact amount and transfer_content from the order
-        # Use timezone-aware datetime for ISO format
-        now = datetime.now(timezone.utc)
-        return PaymentService.process_webhook(
-            transaction_id=transaction_id,
-            amount=payment.amount,  # Use exact amount from payment
-            status="PAID",  # Simulate successful payment
-            transfer_content=payment.transfer_content,  # Use exact transfer_content
-            paid_at=now.isoformat(),
-            timestamp=now.isoformat(),
-            signature=None,  # Skip signature verification in test mode
-            db=db
-        )
-

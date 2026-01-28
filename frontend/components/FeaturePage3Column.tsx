@@ -247,6 +247,11 @@ export default function FeaturePage3Column({
       formData.append('prompt', prompt);
     }
     
+    // Add quality if available
+    if (hasQuality && quality) {
+      formData.append('quality', quality);
+    }
+    
     formData.append('user_id', user_id);
 
     try {
@@ -254,6 +259,12 @@ export default function FeaturePage3Column({
         headers: { 'Content-Type': 'multipart/form-data' },
       });
       setJobId(response.data.job_id);
+      
+      // Trigger credits update event for real-time update with amount to deduct
+      window.dispatchEvent(new CustomEvent('credits-updated', {
+        detail: { amount: displayCoinCost }
+      }));
+      
       startPolling(response.data.job_id);
     } catch (error: any) {
       if (error.response?.status === 402) {
@@ -339,6 +350,11 @@ export default function FeaturePage3Column({
       formData.append('prompt', prompt);
     }
     
+    // Add quality if available
+    if (hasQuality && quality) {
+      formData.append('quality', quality);
+    }
+    
     formData.append('user_id', user_id);
 
     try {
@@ -346,6 +362,12 @@ export default function FeaturePage3Column({
         headers: { 'Content-Type': 'multipart/form-data' },
       });
       setJobId(response.data.job_id);
+      
+      // Trigger credits update event for real-time update with amount to deduct
+      window.dispatchEvent(new CustomEvent('credits-updated', {
+        detail: { amount: displayCoinCost }
+      }));
+      
       startPolling(response.data.job_id);
     } catch (error: any) {
       if (error.response?.status === 402) {

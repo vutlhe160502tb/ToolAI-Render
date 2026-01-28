@@ -3,6 +3,7 @@ import { Inter } from "next/font/google";
 import "./globals.css";
 import { SessionProvider } from '@/components/SessionProvider';
 import MetaMaskErrorHandler from '@/components/MetaMaskErrorHandler';
+import { ToastProvider } from '@/contexts/ToastContext';
 
 const inter = Inter({
   variable: "--font-inter",
@@ -27,7 +28,9 @@ export default function RootLayout({
       >
         <MetaMaskErrorHandler />
         <SessionProvider>
-        {children}
+          <ToastProvider>
+            {children}
+          </ToastProvider>
         </SessionProvider>
       </body>
     </html>

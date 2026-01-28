@@ -5,6 +5,7 @@ export async function POST(request: NextRequest) {
     const formData = await request.formData();
     const source_image = formData.get('source_image');
     const target_image = formData.get('target_image');
+    const quality = formData.get('quality') as string | null;
     const user_id = formData.get('user_id') as string;
 
     if (!source_image || !target_image) return NextResponse.json({ message: 'Missing files' }, { status: 400 });
@@ -14,6 +15,7 @@ export async function POST(request: NextRequest) {
     const backendFormData = new FormData();
     backendFormData.append('source_image', source_image);
     backendFormData.append('target_image', target_image);
+    if (quality) backendFormData.append('quality', quality);
     backendFormData.append('user_id', user_id);
 
     const response = await fetch(`${backendUrl}/api/videos/face-swap`, { method: 'POST', body: backendFormData });

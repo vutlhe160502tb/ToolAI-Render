@@ -19,6 +19,7 @@ export default function SkinEditPage() {
           description: 'Chọn ảnh'
         }
       ]}
+      hasQuality={true}
       coinCost={1}
     />
   );

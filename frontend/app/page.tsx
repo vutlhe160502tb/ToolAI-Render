@@ -1,5 +1,6 @@
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
+import Image from 'next/image';
 
 export default function Home() {
   // Main Features Section - 4 cards ngang
@@ -8,21 +9,25 @@ export default function Home() {
       title: 'Tạo Ảnh',
       description: 'Biến mọi trí tưởng tượng thành hiện thực',
       route: '/create-image',
+      video: '/taoanh.mp4',
     },
     {
       title: 'Tạo Video',
       description: 'Biến ảnh tĩnh nhàm chán trở nên hấp dẫn hơn',
       route: '/create-video',
+      video: '/taovideo.mp4',
     },
     {
       title: 'Tạo Chuyển Động',
       description: 'Tạo nhân vật AI chuyển động theo ý muốn',
       route: '/dance-image-bg',
+      video: '/taochuyendong.mp4',
     },
     {
       title: 'Làm Nét Ảnh',
       description: 'Tăng chất lượng hình ảnh lên tới 4k',
       route: '/upscale-image',
+      image: '/lamnetanh.jpg',
     },
   ];
 
@@ -32,109 +37,99 @@ export default function Home() {
       title: 'Google Banana Pro',
       description: 'Model tạo ảnh tốt nhất hiện nay',
       route: '/models/google-banana-pro',
+      video: '/ggbanana.mp4',
     },
     {
       title: 'Nhảy Với Nền Từ Ảnh',
       description: 'AI sẽ tạo video nhảy dùng nền từ ảnh gốc',
       route: '/dance-image-bg',
+      video: '/nhayvoinentuanh.mp4',
     },
     {
       title: 'Nhảy Với Nền Từ Video',
       description: 'AI sẽ tạo video nhảy dùng nền từ video gốc',
       route: '/dance-video-bg',
+      video: '/nhayvoinentuvideo.mp4',
     },
     {
       title: 'Thay Trang Phục',
       description: 'Thay mọi trang phục bạn muốn',
       route: '/change-outfit',
+      image: '/thaytrangphuc.jpg',
     },
   ];
 
-  // TẠO ẢNH Section - 8 cards
+  // TẠO ẢNH Section - 7 cards
   const createImageFeatures = [
     {
       title: 'Google Banana Pro',
       description: 'Model tạo ảnh 2k 4k tốt nhất hiện nay',
       route: '/models/google-banana-pro',
+      video: '/ggbanana.mp4',
     },
     {
       title: 'Người Mẫu Giới Thiệu Sản Phẩm',
       description: 'Ghép người mẫu và sản phẩm tuỳ biến',
       route: '/product-model',
+      image: '/nguoimaugioithieu.jpg',
     },
     {
       title: 'Thay Trang Phục',
       description: 'Thay mọi trang phục bạn muốn',
       route: '/change-outfit',
+      image: '/thaytrangphuc.jpg',
     },
     {
       title: 'Chỉnh Sửa Da',
       description: 'Làn da nhân vật thực tế hơn',
       route: '/skin-edit',
+      image: '/chinhsuada.jpg',
     },
     {
-      title: 'Face Swap',
+      title: 'Thay khuôn mặt',
       description: 'Thay thế và hoà không',
       route: '/face-swap',
+      image: '/thaykhuonmat.jpg',
     },
     {
-      title: 'Character Swap',
+      title: 'Thay nhân vật',
       description: 'Thay thế và hoán đổi nhân vật',
       route: '/character-swap',
-    },
-    {
-      title: 'Character Swap',
-      description: 'Thay thế và hoán đổi nhân vật',
-      route: '/character-swap-2',
+      image: '/thaynhanvat.jpg',
     },
     {
       title: 'Làm Nét Ảnh',
       description: 'Tăng chất lượng hình ảnh tới 4k',
       route: '/upscale-image',
+      image: '/lamnetanh.jpg',
     },
   ];
 
-  // TẠO VIDEO Section - 8 cards
+  // TẠO VIDEO Section - 4 cards
   const createVideoFeatures = [
     {
       title: 'Tạo Chuyển Động',
       description: 'Tạo nhân vật AI chuyển động theo ý muốn',
       route: '/dance-image-bg',
-    },
-    {
-      title: 'Edit Video',
-      description: 'Tuỳ chỉnh và thay đổi chi tiết video',
-      route: '/edit-video',
+      video: '/taochuyendong.mp4',
     },
     {
       title: 'Nhảy Với Nền Từ Ảnh',
       description: 'AI sẽ tạo video nhảy dùng nền từ ảnh gốc',
       route: '/dance-image-bg',
+      video: '/nhayvoinentuanh.mp4',
     },
     {
       title: 'Nhảy Với Nền Từ Video',
       description: 'AI sẽ tạo video nhảy dùng nền từ video gốc',
       route: '/dance-video-bg',
+      video: '/nhayvoinentuvideo.mp4',
     },
     {
       title: 'Thay Nhân Vật Quảng Cáo',
       description: 'AI sẽ tạo video thay nhân vật quảng cáo',
       route: '/replace-ad',
-    },
-    {
-      title: 'Thay Nhân Vật Quảng Cáo',
-      description: 'AI tạo video thay nhân vật quảng cáo',
-      route: '/replace-ad-2',
-    },
-    {
-      title: 'Giới Thiệu Sản Phẩm Theo Âm Thanh',
-      description: 'AI sẽ tạo video nói theo lời thoại',
-      route: '/product-intro-audio',
-    },
-    {
-      title: 'Lips Sync',
-      description: 'AI sẽ nhại theo tiếng file âm thanh',
-      route: '/lip-sync',
+      image: '/thaynhanvatquangcao.jpg',
     },
   ];
 
@@ -169,8 +164,27 @@ export default function Home() {
             {mainFeatures.map((feature, idx) => (
               <a key={idx} className="block h-full" href={feature.route}>
                 <div className="group rounded-[25px] p-1 sm:p-1.5 md:p-2 transition-all cursor-pointer flex flex-col bg-black border border-black">
-                  <div className="w-full aspect-[4/3] bg-[#2a2a2a] rounded-[20px] mb-2 sm:mb-3 md:mb-4 flex items-center justify-center shrink-0">
-                    <div className="text-gray-500 text-xs sm:text-xs md:text-sm">Preview</div>
+                  <div className="w-full aspect-[450/260] bg-[#2a2a2a] rounded-[20px] mb-2 sm:mb-3 md:mb-4 flex items-center justify-center shrink-0 overflow-hidden">
+                    {feature.video ? (
+                      <video
+                        src={feature.video}
+                        autoPlay
+                        loop
+                        muted
+                        playsInline
+                        className="w-full h-full object-cover"
+                      />
+                    ) : feature.image ? (
+                      <Image
+                        src={feature.image}
+                        alt={feature.title}
+                        width={400}
+                        height={300}
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <div className="text-gray-500 text-xs sm:text-xs md:text-sm">Preview</div>
+                    )}
                   </div>
                   <h2 className="text-xs sm:text-sm md:text-base lg:text-lg font-bold text-white group-hover:bg-gradient-to-b group-hover:from-[#D344FF] group-hover:to-white/70 group-hover:bg-clip-text group-hover:text-transparent mb-[5px] transition-all truncate pl-1 sm:pl-1.5 md:pl-2">{feature.title}</h2>
                   <p className="text-gray-400 text-xs sm:text-xs md:text-sm leading-relaxed truncate shrink pl-1 sm:pl-1.5 md:pl-2 -mt-1">{feature.description}</p>
@@ -190,8 +204,27 @@ export default function Home() {
             {topChoices.map((feature, idx) => (
               <a key={idx} className="block h-full" href={feature.route}>
                 <div className="group rounded-[25px] p-1 sm:p-1.5 md:p-2 transition-all cursor-pointer flex flex-col bg-[#1E1E1E]">
-                  <div className="w-full aspect-[4/3] bg-[#2a2a2a] rounded-[20px] mb-2 sm:mb-3 md:mb-4 flex items-center justify-center shrink-0">
-                    <div className="text-gray-500 text-xs sm:text-sm md:text-base">Preview</div>
+                  <div className="w-full aspect-[450/260] bg-[#2a2a2a] rounded-[20px] mb-2 sm:mb-3 md:mb-4 flex items-center justify-center shrink-0 overflow-hidden">
+                    {feature.video ? (
+                      <video
+                        src={feature.video}
+                        autoPlay
+                        loop
+                        muted
+                        playsInline
+                        className="w-full h-full object-cover"
+                      />
+                    ) : feature.image ? (
+                      <Image
+                        src={feature.image}
+                        alt={feature.title}
+                        width={400}
+                        height={300}
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <div className="text-gray-500 text-xs sm:text-sm md:text-base">Preview</div>
+                    )}
                   </div>
                   <h2 className="text-sm sm:text-base md:text-lg lg:text-xl font-bold text-white group-hover:bg-gradient-to-b group-hover:from-[#D344FF] group-hover:to-white/70 group-hover:bg-clip-text group-hover:text-transparent mb-[5px] transition-all truncate pl-1 sm:pl-1.5 md:pl-2">{feature.title}</h2>
                   <p className="text-gray-400 text-xs sm:text-sm md:text-base leading-relaxed truncate shrink pl-1 sm:pl-1.5 md:pl-2 -mt-1">{feature.description}</p>
@@ -211,8 +244,27 @@ export default function Home() {
             {createImageFeatures.map((feature, idx) => (
               <a key={idx} className="block h-full" href={feature.route}>
                 <div className="group rounded-[25px] p-1 sm:p-1.5 md:p-2 transition-all cursor-pointer flex flex-col bg-[#1E1E1E]">
-                  <div className="w-full aspect-[4/3] bg-[#2a2a2a] rounded-[20px] mb-2 sm:mb-3 md:mb-4 flex items-center justify-center shrink-0">
-                    <div className="text-gray-500 text-xs sm:text-sm md:text-base">Preview</div>
+                  <div className="w-full aspect-[450/260] bg-[#2a2a2a] rounded-[20px] mb-2 sm:mb-3 md:mb-4 flex items-center justify-center shrink-0 overflow-hidden">
+                    {feature.video ? (
+                      <video
+                        src={feature.video}
+                        autoPlay
+                        loop
+                        muted
+                        playsInline
+                        className="w-full h-full object-cover"
+                      />
+                    ) : feature.image ? (
+                      <Image
+                        src={feature.image}
+                        alt={feature.title}
+                        width={400}
+                        height={300}
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <div className="text-gray-500 text-xs sm:text-sm md:text-base">Preview</div>
+                    )}
                   </div>
                   <h2 className="text-sm sm:text-base md:text-lg lg:text-xl font-bold text-white group-hover:bg-gradient-to-b group-hover:from-[#D344FF] group-hover:to-white/70 group-hover:bg-clip-text group-hover:text-transparent mb-[5px] transition-all truncate pl-1 sm:pl-1.5 md:pl-2">{feature.title}</h2>
                   <p className="text-gray-400 text-xs sm:text-sm md:text-base leading-relaxed truncate shrink pl-1 sm:pl-1.5 md:pl-2 -mt-1">{feature.description}</p>
@@ -232,8 +284,27 @@ export default function Home() {
             {createVideoFeatures.map((feature, idx) => (
               <a key={idx} className="block h-full" href={feature.route}>
                 <div className="group rounded-[25px] p-1 sm:p-1.5 md:p-2 transition-all cursor-pointer flex flex-col bg-[#1E1E1E]">
-                  <div className="w-full aspect-[4/3] bg-[#2a2a2a] rounded-[20px] mb-2 sm:mb-3 md:mb-4 flex items-center justify-center shrink-0">
-                    <div className="text-gray-500 text-xs sm:text-sm md:text-base">Preview</div>
+                  <div className="w-full aspect-[450/260] bg-[#2a2a2a] rounded-[20px] mb-2 sm:mb-3 md:mb-4 flex items-center justify-center shrink-0 overflow-hidden">
+                    {feature.video ? (
+                      <video
+                        src={feature.video}
+                        autoPlay
+                        loop
+                        muted
+                        playsInline
+                        className="w-full h-full object-cover"
+                      />
+                    ) : feature.image ? (
+                      <Image
+                        src={feature.image}
+                        alt={feature.title}
+                        width={400}
+                        height={300}
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <div className="text-gray-500 text-xs sm:text-sm md:text-base">Preview</div>
+                    )}
                   </div>
                   <h2 className="text-sm sm:text-base md:text-lg lg:text-xl font-bold text-white group-hover:bg-gradient-to-b group-hover:from-[#D344FF] group-hover:to-white/70 group-hover:bg-clip-text group-hover:text-transparent mb-[5px] transition-all truncate pl-1 sm:pl-1.5 md:pl-2">{feature.title}</h2>
                   <p className="text-gray-400 text-xs sm:text-sm md:text-base leading-relaxed truncate shrink pl-1 sm:pl-1.5 md:pl-2 -mt-1">{feature.description}</p>

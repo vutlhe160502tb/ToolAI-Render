@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect } from 'react';
 import Header from '@/components/Header';
+import Footer from '@/components/Footer';
 import { Upload, Video, Loader2, RotateCcw, Trash2, Image as ImageIcon, ChevronDown, ArrowRight } from 'lucide-react';
 import axios from 'axios';
 import LoadingPreview from '@/components/LoadingPreview';
@@ -165,9 +166,19 @@ export default function CreateVideoPage() {
                 <h1 className="block text-lg sm:text-xl font-medium text-white mb-[15px] pb-[10px] border-b border-gray-400/30 -mx-4 sm:-mx-6 px-4 sm:px-6">Kling Motion Control</h1>
                 
                 {/* Preview Card */}
-                <div className="bg-[#2a2a2a] rounded-[25px] p-4 sm:p-6 mb-4 sm:mb-6 min-h-[170px] sm:min-h-[220px] overflow-hidden w-full min-w-0">
-                  <div className="text-[#D344FF] font-semibold mb-2 break-words" style={{ fontSize: 'clamp(0.875rem, 3vw, 1.25rem)' }}>Motion Control</div>
-                  <p className="text-gray-400 break-words" style={{ fontSize: 'clamp(0.75rem, 2.5vw, 0.875rem)' }}>Biến ảnh tĩnh nhàm chán trở nên hấp dẫn hơn</p>
+                <div className="bg-[#2a2a2a] rounded-[25px] p-4 sm:p-6 mb-4 sm:mb-6 aspect-[450/260] overflow-hidden w-full min-w-0 relative">
+                  <video
+                    src="/taovideo.mp4"
+                    autoPlay
+                    loop
+                    muted
+                    playsInline
+                    className="absolute inset-0 w-full h-full object-cover"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent flex flex-col justify-end p-4">
+                    <div className="text-[#D344FF] font-semibold mb-2 break-words" style={{ fontSize: 'clamp(0.875rem, 3vw, 1.25rem)' }}>Motion Control</div>
+                    <p className="text-gray-400 break-words" style={{ fontSize: 'clamp(0.75rem, 2.5vw, 0.875rem)' }}>Biến ảnh tĩnh nhàm chán trở nên hấp dẫn hơn</p>
+                  </div>
                 </div>
                 
                 {/* Upload Area */}
@@ -415,6 +426,7 @@ export default function CreateVideoPage() {
           </div>
         </div>
       </main>
+      <Footer />
     </div>
   );
 }

@@ -31,6 +31,10 @@ export default function DanceVideoBgPage() {
       ]}
       hasQuality={true}
       coinCost={1}
+      previewMedia={{
+        type: 'video',
+        src: '/nhayvoinentuvideo.mp4'
+      }}
     />
   );
 }

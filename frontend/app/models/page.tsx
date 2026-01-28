@@ -1,6 +1,7 @@
 'use client';
 
 import Header from '@/components/Header';
+import Footer from '@/components/Footer';
 import { Sparkles } from 'lucide-react';
 
 export default function ModelsPage() {
@@ -18,6 +19,7 @@ export default function ModelsPage() {
           </div>
         </div>
       </main>
+      <Footer />
     </div>
   );
 }

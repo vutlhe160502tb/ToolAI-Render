@@ -31,6 +31,10 @@ export default function ReplaceAdPage() {
       ]}
       hasQuality={true}
       coinCost={1}
+      previewMedia={{
+        type: 'image',
+        src: '/thaynhanvatquangcao.jpg'
+      }}
     />
   );
 }

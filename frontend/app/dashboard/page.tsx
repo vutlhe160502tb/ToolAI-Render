@@ -256,8 +256,38 @@ export default function DashboardPage() {
 
   const totalJobs = jobs.length;
   const completedJobs = jobs.filter(j => j.status === 'completed').length;
-  const imageJobs = jobs.filter(j => j.feature_type?.includes('image') || j.feature_type === 'create-image' || j.feature_type === 'upscale-image').length;
-  const videoJobs = jobs.filter(j => j.feature_type?.includes('video') || j.feature_type === 'create-video' || j.feature_type === 'dance-image-bg' || j.feature_type === 'dance-video-bg').length;
+  
+  // Các feature_type liên quan đến ảnh
+  const IMAGE_FEATURE_TYPES = [
+    'create-image',
+    'upscale-image',
+    'change-outfit',
+    'skin-edit',
+    'face-swap',
+    'character-swap',
+    'character-swap-2',
+    'dance-image-bg',
+    'product-model'
+  ];
+  
+  // Các feature_type liên quan đến video
+  const VIDEO_FEATURE_TYPES = [
+    'create-video',
+    'dance-video-bg',
+    'edit-video',
+    'replace-ad',
+    'replace-ad-2'
+  ];
+  
+  // Các feature_type liên quan đến lipsync
+  const LIPSYNC_FEATURE_TYPES = [
+    'product-intro-audio',
+    'lip-sync'
+  ];
+  
+  const imageJobs = jobs.filter(j => IMAGE_FEATURE_TYPES.includes(j.feature_type)).length;
+  const videoJobs = jobs.filter(j => VIDEO_FEATURE_TYPES.includes(j.feature_type)).length;
+  const lipsyncJobs = jobs.filter(j => LIPSYNC_FEATURE_TYPES.includes(j.feature_type)).length;
   const favoriteJobsCount = favoriteJobs.size;
   const currentPage = 1;
   const totalPages = Math.ceil(filteredJobs.length / 10) || 1;
@@ -352,7 +382,7 @@ export default function DashboardPage() {
                         <Mic className="w-4 h-4" />
                         <span>Lipsynic</span>
                       </div>
-                      <span className="bg-black text-[#898A8B] text-xs px-1.5 py-0.5 rounded">0</span>
+                      <span className="bg-black text-[#898A8B] text-xs px-1.5 py-0.5 rounded">{lipsyncJobs}</span>
                     </Link>
                     <Link href="/sharpen-image" className="w-full flex items-center justify-between px-3 py-2 rounded-[12px] transition-all text-sm text-[#898A8B] hover:bg-[#2a2a2a]">
                       <div className="flex items-center gap-2">

@@ -9,11 +9,11 @@ import axios from 'axios';
 import { useSession } from 'next-auth/react';
 
 const packages = [
-  { id: 1, coins: 30, price: 50000, title: 'Starter' },
-  { id: 2, coins: 100, price: 130000, title: 'Basic' },
-  { id: 3, coins: 220, price: 260000, title: 'Pro' },
-  { id: 4, coins: 500, price: 520000, title: 'Studio' },
-  { id: 5, coins: 1400, price: 1300000, title: 'Agency' },
+  { id: 1, coins: 10, price: 10000, title: 'Starter' },
+  { id: 2, coins: 20, price: 20000, title: 'Basic' },
+  { id: 3, coins: 50, price: 50000, title: 'Pro' },
+  { id: 4, coins: 100, price: 100000, title: 'Studio' },
+  { id: 5, coins: 500, price: 500000, title: 'Agency' },
 ];
 
 export default function CreditsPage() {

@@ -95,6 +95,18 @@ export default function Header() {
     localStorage.removeItem('jwt_token');
   };
 
+  const formatCredits = (credits: number | null): string => {
+    if (credits === null || credits === undefined) return '0';
+    
+    // Kiểm tra nếu là số nguyên
+    if (credits % 1 === 0) {
+      return credits.toLocaleString('vi-VN');
+    }
+    
+    // Nếu có phần thập phân, hiển thị với 1 chữ số sau dấu chấm (78.5)
+    return credits.toFixed(1).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+  };
+
   return (
     <header className="w-full bg-[#101010]">
       <div className="container mx-auto px-4 py-3">
@@ -147,7 +159,7 @@ export default function Header() {
                 href="/credits"
                 className="px-4 py-2 bg-[#2E3031] text-gray-300 rounded-[12px] hover:bg-[#333] transition-colors flex items-center gap-2 text-sm font-medium"
               >
-                <span>{credits?.toLocaleString('vi-VN') || '0'}</span>
+                <span>{formatCredits(credits)}</span>
                 <div className="w-2 h-2 bg-green-500 rounded-full"></div>
               </Link>
             )}

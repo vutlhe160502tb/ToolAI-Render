@@ -1,8 +1,11 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
+import Image from 'next/image';
+import { useRouter } from 'next/navigation';
 import Header from '@/components/Header';
-import { Upload, Image as ImageIcon, Loader2, RotateCcw, Trash2, Video, ChevronDown, ArrowRight } from 'lucide-react';
+import Footer from '@/components/Footer';
+import { Upload, Image as ImageIcon, Loader2, RotateCcw, Trash2, Video, ChevronDown, ChevronRight, ArrowRight, Heart, Download } from 'lucide-react';
 import axios from 'axios';
 import LoadingPreview from '@/components/LoadingPreview';
 import VideoDurationInfo from '@/components/VideoDurationInfo';
@@ -12,12 +15,15 @@ import { useFeaturePage } from '@/hooks/useFeaturePage';
 import { FILE_TYPES, FILE_SIZES } from '@/lib/constants';
 
 export default function UpscaleImagePage() {
+  const router = useRouter();
   const [file, setFile] = useState<File | null>(null);
   const [prompt, setPrompt] = useState('');
   const [isAdvancedOpen, setIsAdvancedOpen] = useState(false);
-  const [quality, setQuality] = useState('720P');
-  const [qualityCost, setQualityCost] = useState(1);
+  const [quality, setQuality] = useState('2K');
+  // Số coin hiển thị trên nút = số coin trừ khi ấn (dùng chung qualityCost)
+  const [qualityCost, setQualityCost] = useState(0.5);
   const [isQualityOpen, setIsQualityOpen] = useState(false);
+  const [favoriteJobs, setFavoriteJobs] = useState<Set<string>>(new Set());
   const qualityRef = useRef<HTMLDivElement>(null);
   
   const {
@@ -70,7 +76,9 @@ export default function UpscaleImagePage() {
     setIsGenerating(true);
     const formData = new FormData();
     formData.append('file', file);
-    if (quality) formData.append('quality', quality);
+    // Convert 2K/4K to backend format
+    const backendQuality = quality === '2K' ? '720P' : quality === '4K' ? '1080P' : quality;
+    if (backendQuality) formData.append('quality', backendQuality);
     formData.append('user_id', user_id);
 
     try {
@@ -79,7 +87,7 @@ export default function UpscaleImagePage() {
       });
       setJobId(response.data.job_id);
       
-      // Trigger credits update event for real-time update with amount to deduct
+      // Trừ đúng số coin đã hiển thị trên nút (qualityCost)
       window.dispatchEvent(new CustomEvent('credits-updated', {
         detail: { amount: qualityCost }
       }));
@@ -132,7 +140,7 @@ export default function UpscaleImagePage() {
       });
       setJobId(response.data.job_id);
       
-      // Trigger credits update event for real-time update with amount to deduct
+      // Trừ đúng số coin đã hiển thị trên nút (qualityCost)
       window.dispatchEvent(new CustomEvent('credits-updated', {
         detail: { amount: qualityCost }
       }));
@@ -148,265 +156,290 @@ export default function UpscaleImagePage() {
     }
   };
 
+  // Load favorites from localStorage on mount
+  useEffect(() => {
+    if (session) {
+      const user_id = (session.user as any)?.id;
+      if (user_id) {
+        const savedFavorites = localStorage.getItem(`favorites_${user_id}`);
+        if (savedFavorites) {
+          try {
+            setFavoriteJobs(new Set(JSON.parse(savedFavorites)));
+          } catch (e) {
+            console.error('Error loading favorites:', e);
+          }
+        }
+      }
+    }
+  }, [session]);
+
+  // Rút gọn tên file
+  const truncateFileName = (fileName: string, maxLength: number = 15) => {
+    if (fileName.length <= maxLength) return fileName;
+    const extension = fileName.split('.').pop();
+    const nameWithoutExt = fileName.substring(0, fileName.lastIndexOf('.'));
+    const truncated = nameWithoutExt.substring(0, maxLength);
+    return `${truncated}...${extension}`;
+  };
+
+  const handleDownload = async () => {
+    const displayUrl = currentDisplayJob?.result_url || previewUrl;
+    if (displayUrl) {
+      try {
+        const response = await fetch(displayUrl);
+        if (!response.ok) {
+          throw new Error('Failed to fetch file');
+        }
+        
+        const blob = await response.blob();
+        const blobUrl = window.URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = blobUrl;
+        
+        // Lấy tên file từ URL hoặc dùng tên mặc định
+        const fileName = displayUrl.split('/').pop() || `upscaled-image-${Date.now()}.jpg`;
+        link.download = fileName;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        window.URL.revokeObjectURL(blobUrl);
+      } catch (error) {
+        console.error('Error downloading file:', error);
+        // Fallback: mở trong tab mới
+        window.open(displayUrl, '_blank');
+      }
+    }
+  };
+
+  const toggleFavorite = (jobId: string) => {
+    setFavoriteJobs(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(jobId)) {
+        newSet.delete(jobId);
+      } else {
+        newSet.add(jobId);
+      }
+      
+      // Save to localStorage
+      if (session) {
+        const user_id = (session.user as any)?.id;
+        if (user_id) {
+          localStorage.setItem(`favorites_${user_id}`, JSON.stringify(Array.from(newSet)));
+        }
+      }
+      
+      return newSet;
+    });
+  };
+
+  const handleFavoriteClick = () => {
+    if (currentDisplayJob?.id) {
+      toggleFavorite(currentDisplayJob.id);
+      // Chuyển đến dashboard sau khi toggle
+      router.push('/dashboard');
+    } else if (previewUrl && file) {
+      // Nếu chưa có job nhưng có preview, vẫn chuyển đến dashboard
+      router.push('/dashboard');
+    }
+  };
+
+  // Close quality dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (qualityRef.current && !qualityRef.current.contains(event.target as Node)) {
+        setIsQualityOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
 
   return (
     <div className="min-h-screen bg-black">
       <Header />
       <main className="w-full">
         <div className="max-w-[1920px] mx-auto px-4 sm:px-8 md:px-[50px] py-8 md:py-12">
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 md:gap-6 min-h-[calc(100vh-200px)]">
-            {/* Left Column - Controls */}
-            <div className="lg:col-span-4 flex flex-col min-w-0">
-              <div className="bg-[#1A1A1A] rounded-[20px] pt-[10px] pb-6 px-4 sm:px-6 border-b border-gray-400/30 h-fit w-full min-w-0">
-                <h1 className="block text-lg sm:text-xl font-medium text-white mb-[15px] pb-[10px] border-b border-gray-400/30 -mx-4 sm:-mx-6 px-4 sm:px-6">Kling Motion Control</h1>
-                
-                {/* Preview Card */}
-                <div className="bg-[#2a2a2a] rounded-[25px] p-4 sm:p-6 mb-4 sm:mb-6 min-h-[170px] sm:min-h-[220px] overflow-hidden w-full min-w-0">
-                  <div className="text-[#D344FF] font-semibold mb-2 break-words" style={{ fontSize: 'clamp(0.875rem, 3vw, 1.25rem)' }}>Motion Control</div>
-                  <p className="text-gray-400 break-words" style={{ fontSize: 'clamp(0.75rem, 2.5vw, 0.875rem)' }}>Tăng chất lượng hình ảnh lên tới 4k</p>
-                </div>
-                
-                {/* Upload Area */}
-                <div className="mb-4 sm:mb-6 w-full min-w-0">
-                  <div className="bg-[#252525] rounded-[20px] p-4 sm:p-6 text-center flex flex-col items-center justify-center min-h-[170px] sm:min-h-[220px]">
-                    <ImageIcon className="text-white mx-auto mb-2 shrink-0" style={{ width: 'clamp(1.5rem, 5vw, 2.5rem)', height: 'clamp(1.5rem, 5vw, 2.5rem)' }} />
-                    <input
-                      accept="image/*"
-                      className="hidden"
-                      id="file-upload"
-                      type="file"
-                      onChange={handleFileUpload}
-                    />
-                    <label
-                      htmlFor="file-upload"
-                      className="cursor-pointer w-full"
-                    >
-                      <div className="text-white font-semibold mb-1 break-words leading-tight" style={{ fontSize: 'clamp(0.75rem, 3vw, 1rem)' }}>
-                        {file ? file.name : 'Tải lên ảnh'}
-                      </div>
-                      {!file && (
-                        <div className="text-gray-400 break-words leading-tight mt-1" style={{ fontSize: 'clamp(0.625rem, 2.5vw, 0.875rem)' }}>
-                          Chọn ảnh từ máy tính
-                        </div>
-                      )}
-                    </label>
-                  </div>
+          <div className="bg-[#151515] rounded-[50px] border border-gray-800/50 py-[25px] px-[25px] max-w-[1119px] mx-auto">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 md:gap-8">
+              {/* Left Column - Input and Controls (1/3) */}
+              <div className="flex flex-col space-y-6 lg:col-span-1 justify-start">
+                {/* Header */}
+                <div>
+                  <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-white mb-2">
+                    Làm Nét Ảnh
+                  </h1>
+                  <p className="text-gray-400 text-sm sm:text-base">
+                    Làm nét ảnh chỉ trong 1 click
+                  </p>
                 </div>
 
-                {/* Quality Selector */}
-                <div className="mb-4 sm:mb-6 relative w-full min-w-0" ref={qualityRef}>
+                {/* Image Upload Area */}
+                <div>
+                  <label htmlFor="file-upload" className="cursor-pointer">
+                    <div className="bg-[#1A1A1A] rounded-[20px] p-8 sm:p-12 text-center flex flex-col items-center justify-center aspect-[298/317] md:aspect-[298/475] hover:bg-[#333333] transition-colors border border-gray-600/50">
+                      <input
+                        accept="image/*"
+                        className="hidden"
+                        id="file-upload"
+                        type="file"
+                        onChange={handleFileUpload}
+                      />
+                      <div className="w-16 h-16 bg-gray-600 rounded-lg flex items-center justify-center mb-4">
+                        <ImageIcon className="w-8 h-8 text-gray-400" />
+                      </div>
+                      <p className="text-gray-400 text-sm sm:text-base">
+                        {file ? truncateFileName(file.name) : 'Thêm ảnh ở đây'}
+                      </p>
+                    </div>
+                  </label>
+                </div>
+
+                {/* Quality Selection */}
+                <div className="relative" ref={qualityRef}>
                   <div 
-                    className="flex items-center justify-between bg-[#252525] rounded-[20px] px-3 sm:px-4 py-2 cursor-pointer hover:bg-[#3a3a3a] transition-all relative overflow-hidden w-full min-w-0"
+                    className="bg-[#1A1A1A] rounded-[20px] px-4 py-2.5 cursor-pointer hover:bg-[#333333] transition-colors flex items-center justify-between border border-gray-600/50"
                     onClick={() => setIsQualityOpen(!isQualityOpen)}
                   >
-                    <div className="flex flex-col min-w-0 flex-1">
-                      <label className="text-white mb-1 break-words" style={{ fontSize: 'clamp(0.625rem, 3vw, 0.875rem)' }}>Chất lượng</label>
-                      <span className="text-white font-semibold break-words" style={{ fontSize: 'clamp(0.625rem, 3vw, 0.875rem)' }}>{quality}</span>
+                    <div>
+                      <p className="text-gray-400 text-xs mb-1">Chất lượng</p>
+                      <p className="text-white font-bold text-lg">{quality}</p>
                     </div>
-                    <ArrowRight className="text-gray-400 shrink-0 ml-2" style={{ width: 'clamp(0.625rem, 3vw, 1rem)', height: 'clamp(0.625rem, 3vw, 1rem)' }} />
+                    <ChevronRight className="text-gray-400 w-4 h-4" />
                   </div>
                   
-                  {/* Quality Dropdown */}
+                  {/* Quality Dropdown - Mobile: bên dưới, Desktop: bên phải */}
                   {isQualityOpen && (
-                    <div className="absolute left-full top-0 ml-2 bg-[#1a1a1a] rounded-[20px] p-1.5 z-10 w-[170px]">
+                    <div className="absolute top-full left-0 mt-2 md:top-0 md:left-full md:mt-0 md:ml-2 bg-[#1a1a1a] rounded-[20px] p-2 w-[200px] z-10 shadow-lg">
                       <div
                         onClick={() => {
-                          setQuality('720P');
-                          setQualityCost(1);
+                          setQuality('2K');
+                          setQualityCost(0.5);
                           setIsQualityOpen(false);
                         }}
-                        className={`p-2 rounded-[10px] cursor-pointer transition-all mb-1.5 ${
-                          quality === '720P' ? 'bg-[#2a2a2a]' : 'bg-[#1a1a1a] hover:bg-[#2a2a2a]'
+                        className={`p-3 rounded-[15px] cursor-pointer transition-all mb-2 ${
+                          quality === '2K' ? 'bg-[#2a2a2a]' : 'hover:bg-[#2a2a2a]'
                         }`}
                       >
-                        <div className="text-white text-sm font-semibold mb-0.5">720P</div>
-                        <div className="text-gray-400 text-xs">Tốn 1 coin</div>
+                        <div className="flex items-center justify-between">
+                          <span className="text-white font-bold">2K</span>
+                          <span className="text-gray-400 text-sm">Tốn 0.5 coin</span>
+                        </div>
                       </div>
                       <div
                         onClick={() => {
-                          setQuality('1080P');
-                          setQualityCost(2);
+                          setQuality('4K');
+                          setQualityCost(0.8);
                           setIsQualityOpen(false);
                         }}
-                        className={`p-2 rounded-[10px] cursor-pointer transition-all ${
-                          quality === '1080P' ? 'bg-[#2a2a2a]' : 'bg-[#1a1a1a] hover:bg-[#2a2a2a]'
+                        className={`p-3 rounded-[15px] cursor-pointer transition-all ${
+                          quality === '4K' ? 'bg-[#2a2a2a]' : 'hover:bg-[#2a2a2a]'
                         }`}
                       >
-                        <div className="text-white text-sm font-semibold mb-0.5">1080P</div>
-                        <div className="text-gray-400 text-xs">Tốn 2 coin</div>
+                        <div className="flex items-center justify-between">
+                          <span className="text-white font-bold">4K</span>
+                          <span className="text-gray-400 text-sm">Tốn 0.8 coin</span>
+                        </div>
                       </div>
                     </div>
                   )}
                 </div>
-
-                {/* Advanced Mode */}
-                <div className="mb-4 sm:mb-6 w-full min-w-0">
-                  <button
-                    onClick={() => setIsAdvancedOpen(!isAdvancedOpen)}
-                    className={`w-full flex items-center justify-between rounded-lg px-3 sm:px-4 py-2 transition-all overflow-hidden min-w-0 ${
-                      isAdvancedOpen ? 'bg-[#1A1A1A]' : 'bg-[#1A1A1A] hover:bg-[#3a3a3a]'
-                    }`}
-                  >
-                    <span className="text-white break-words flex-1 text-left" style={{ fontSize: 'clamp(0.625rem, 3vw, 0.875rem)' }}>Chế độ nâng cao</span>
-                    <ChevronDown className={`text-gray-400 transition-transform shrink-0 ml-2 ${isAdvancedOpen ? 'rotate-180' : ''}`} style={{ width: 'clamp(0.625rem, 3vw, 1rem)', height: 'clamp(0.625rem, 3vw, 1rem)' }} />
-                  </button>
-                  
-                  {/* Advanced Mode Panel */}
-                  {isAdvancedOpen && (
-                    <div className="mt-4 bg-[#2a2a2a] rounded-[20px] p-3 sm:p-4 overflow-hidden">
-                      <div className="text-white font-semibold mb-2 break-words" style={{ fontSize: 'clamp(0.625rem, 3vw, 0.875rem)' }}>Prompt</div>
-                      <p className="text-white mb-3 break-words leading-tight" style={{ fontSize: 'clamp(0.625rem, 3vw, 0.875rem)' }}>
-                        Bạn có thể miêu tả thêm cho ảnh như nền hay đồ vật hay chi tiết của người để thêm sinh động.
-                      </p>
-                      <textarea
-                        value={prompt}
-                        onChange={(e) => setPrompt(e.target.value)}
-                        placeholder="Nhập prompt của bạn..."
-                        className="w-full bg-[#1a1a1a] text-white rounded-lg px-3 sm:px-4 py-2 sm:py-3 min-h-[100px] sm:min-h-[120px] focus:outline-none resize-none break-words"
-                        style={{ fontSize: 'clamp(0.625rem, 3vw, 0.875rem)' }}
-                      />
-                    </div>
-                  )}
-                </div>
-
-                {/* Progress */}
-                {isGenerating && (
-                  <div className="mb-4 sm:mb-6">
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="text-white text-sm">Đang xử lý...</span>
-                      <span className="text-[#D344FF] text-sm">{progress}%</span>
-                    </div>
-                    <div className="w-full bg-gray-700 rounded-full h-2">
-                      <div
-                        className="bg-[#D344FF] h-2 rounded-full transition-all"
-                        style={{ width: `${progress}%` }}
-                      />
-                    </div>
-                  </div>
-                )}
 
                 {/* Generate Button */}
                 <button
                   onClick={handleGenerate}
                   disabled={isGenerating || !file}
-                  className="w-full px-4 sm:px-6 py-3 sm:py-4 bg-[#D344FF] text-white rounded-[20px] hover:bg-[#B836E6] transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 overflow-hidden"
+                  className="w-full px-6 py-4 bg-gradient-to-r from-[#D344FF] to-[#FF6B9D] text-white rounded-[20px] hover:opacity-90 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 font-semibold text-lg"
                 >
                   {isGenerating ? (
                     <>
-                      <Loader2 className="w-5 h-5 animate-spin shrink-0" />
-                      <span className="break-words whitespace-nowrap" style={{ fontSize: 'clamp(0.75rem, 3vw, 1rem)' }}>Đang xử lý...</span>
+                      <Loader2 className="w-5 h-5 animate-spin" />
+                      <span>Đang xử lý...</span>
                     </>
                   ) : (
                     <>
-                      <ImageIcon className="w-5 h-5 shrink-0" />
-                      <span className="break-words whitespace-nowrap" style={{ fontSize: 'clamp(0.75rem, 3vw, 1rem)' }}>Tạo</span>
-                      <span className="shrink-0 whitespace-nowrap" style={{ fontSize: 'clamp(0.625rem, 3vw, 0.875rem)' }}>{qualityCost} Coin</span>
+                      <span>Làm nét</span>
+                      <span className="text-sm font-normal opacity-90">{qualityCost} Coin</span>
                     </>
                   )}
                 </button>
-              </div>
-            </div>
 
-            {/* Middle Column - Preview */}
-            <div className="lg:col-span-6 flex items-center justify-center min-h-[400px] lg:min-h-0">
-              <div className="w-full h-full bg-[#1A1A1A] rounded-[25px] flex items-center justify-center p-4 sm:p-8">
-                {(() => {
-                  // Hiển thị loading khi đang generating
-                  if (isGenerating) {
-                    return <LoadingPreview progress={progress} />;
-                  }
-                  
-                  const displayUrl = currentDisplayJob?.result_url || previewUrl;
-                  if (displayUrl) {
-                    if (isImageUrl(displayUrl)) {
+                {/* Progress */}
+                {isGenerating && (
+                  <div>
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-white text-sm">Đang xử lý...</span>
+                      <span className="text-[#D344FF] text-sm font-semibold">{progress}%</span>
+                    </div>
+                    <div className="w-full bg-gray-700 rounded-full h-2">
+                      <div
+                        className="bg-gradient-to-r from-[#D344FF] to-[#FF6B9D] h-2 rounded-full transition-all"
+                        style={{ width: `${progress}%` }}
+                      />
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Right Column - Preview (2/3), chiều cao tăng thêm */}
+              <div className="relative lg:col-span-2">
+                <div className="bg-[#1A1A1A] rounded-[20px] p-8 sm:p-12 aspect-[1119/1300] flex items-center justify-center relative border border-gray-600/50">
+                  {(() => {
+                    if (isGenerating) {
+                      return <LoadingPreview progress={progress} />;
+                    }
+                    
+                    const displayUrl = currentDisplayJob?.result_url || previewUrl;
+                    if (displayUrl && isImageUrl(displayUrl)) {
                       return (
                         <img
                           src={displayUrl}
-                          alt="Result"
+                          alt="Preview"
                           className="max-w-full max-h-full object-contain rounded-lg"
                         />
                       );
                     }
-                    // Video removed - only show images
-                  }
-                  return (
-                    <div className="text-center">
-                      <div className="text-[#D344FF] text-xl sm:text-2xl font-semibold mb-2">Motion Control</div>
-                      <p className="text-gray-400 text-xs sm:text-sm">Tăng chất lượng hình ảnh lên tới 4k</p>
-                    </div>
-                  );
-                })()}
-              </div>
-            </div>
+                    
+                    return (
+                      <p className="text-gray-500 text-lg">Ảnh preview</p>
+                    );
+                  })()}
+                </div>
 
-            {/* Right Column - Results/History */}
-            <div className="lg:col-span-2 flex flex-col min-h-[400px] lg:min-h-0">
-              <div className="bg-[#131313] rounded-[20px] px-[15px] pt-[20px] pb-4 sm:pb-6 overflow-y-auto h-full flex flex-col">
-                {currentDisplayJob ? (
-                  <>
-                    <div className="flex flex-wrap items-center justify-between gap-2 mb-4 min-w-0 w-full">
-                      <div className="bg-[#101010] border border-gray-400/30 rounded-[10px] px-2 py-1 text-white text-[9px] sm:text-[10px] font-medium whitespace-nowrap shrink-0 max-w-full overflow-hidden">
-                        Kling motion control 2.6
-                      </div>
-                      {currentDisplayJob.created_at && (
-                        <p className="text-white text-xs ml-auto">{formatDate(currentDisplayJob.created_at)}</p>
-                      )}
-                    </div>
-                    
-                    {/* Info Section - Quality and Duration */}
-                    {currentDisplayJob.result_url && (() => {
-                      const isImage = isImageUrl(currentDisplayJob.result_url);
-                      const quality = '1080p';
-                      
-                      return (
-                        <div className="mb-4 flex gap-2">
-                          {isImage ? (
-                            <span className="bg-[#2a2a2a] text-white text-xs px-2 py-1 rounded-full flex items-center gap-1">
-                              <ImageIcon className="w-3 h-3" />
-                              {quality}
-                            </span>
-                          ) : (
-                            <>
-                              <span className="bg-[#2a2a2a] text-white text-xs px-2 py-1 rounded-full flex items-center gap-1">
-                                <Video className="w-3 h-3" />
-                                {quality}
-                              </span>
-                              <VideoDurationInfo url={currentDisplayJob.result_url} />
-                            </>
-                          )}
-                        </div>
-                      );
-                    })()}
-                    
-                    {/* Bottom Actions */}
-                    <div className="mt-auto pt-4 border-t border-gray-400/20 flex items-center justify-between">
+                {/* Action Buttons - Top Right - Hiển thị khi có ảnh */}
+                {(() => {
+                  const displayUrl = currentDisplayJob?.result_url || previewUrl;
+                  const jobId = currentDisplayJob?.id;
+                  const isFavorite = jobId ? favoriteJobs.has(jobId) : false;
+                  
+                  return displayUrl && isImageUrl(displayUrl) ? (
+                    <div className="absolute top-4 right-4 flex flex-col gap-2 z-10">
                       <button
-                        onClick={() => handleRerun(currentDisplayJob)}
-                        className="flex items-center gap-2 text-white text-xs hover:text-gray-300 transition-colors cursor-pointer"
+                        onClick={handleFavoriteClick}
+                        className="w-10 h-10 bg-[#2a2a2a]/80 backdrop-blur-sm rounded-full flex items-center justify-center hover:bg-[#2a2a2a] transition-colors border border-white/10 cursor-pointer"
                       >
-                        <RotateCcw className="w-4 h-4" />
-                        <span>Reset</span>
+                        <Heart 
+                          className={`w-5 h-5 ${isFavorite ? 'text-red-500' : 'text-white'}`} 
+                          fill={isFavorite ? 'red' : 'none'} 
+                        />
                       </button>
                       <button
-                        onClick={handleDelete}
-                        className="text-white hover:text-red-400 transition-colors cursor-pointer"
+                        onClick={handleDownload}
+                        className="w-10 h-10 bg-[#2a2a2a]/80 backdrop-blur-sm rounded-full flex items-center justify-center hover:bg-[#2a2a2a] transition-colors border border-white/10 cursor-pointer"
                       >
-                        <Trash2 className="w-4 h-4" />
+                        <Download className="w-5 h-5 text-white" />
                       </button>
                     </div>
-                  </>
-                ) : (
-                  <div className="flex flex-wrap items-center justify-between gap-2 mb-4 min-w-0 w-full">
-                    <div className="bg-[#101010] border border-gray-400/30 rounded-[10px] px-2 py-1 text-white text-[9px] sm:text-[10px] font-medium whitespace-nowrap shrink-0 max-w-full overflow-hidden">
-                      Kling motion control 2.6
-                    </div>
-                  </div>
-                )}
+                  ) : null;
+                })()}
               </div>
             </div>
           </div>
         </div>
       </main>
+      <Footer />
     </div>
   );
 }

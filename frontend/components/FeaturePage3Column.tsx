@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import Header from '@/components/Header';
+import Footer from '@/components/Footer';
 import { Video, Loader2, Image as ImageIcon, RotateCcw, Trash2, Music, ChevronDown, ArrowRight } from 'lucide-react';
 import axios from 'axios';
 import { useSession } from 'next-auth/react';
@@ -78,6 +79,10 @@ interface FeaturePage3ColumnProps {
   hasQuality?: boolean;
   hasMode?: boolean;
   coinCost?: number;
+  previewMedia?: {
+    type: 'video' | 'image';
+    src: string;
+  };
 }
 
 export default function FeaturePage3Column({
@@ -90,7 +95,8 @@ export default function FeaturePage3Column({
   promptPlaceholder = 'Nhập prompt...',
   hasQuality = false,
   hasMode = false,
-  coinCost = 1
+  coinCost = 1,
+  previewMedia
 }: FeaturePage3ColumnProps) {
   const { data: session } = useSession();
   const [files, setFiles] = useState<Record<string, File | null>>({});
@@ -424,9 +430,30 @@ export default function FeaturePage3Column({
                 <h1 className="block text-lg sm:text-xl font-medium text-white mb-[15px] pb-[10px] border-b border-gray-400/30 -mx-4 sm:-mx-6 px-4 sm:px-6">Kling Motion Control</h1>
                 
                 {/* Preview Card */}
-                <div className="bg-[#2a2a2a] rounded-[25px] p-4 sm:p-6 mb-4 sm:mb-6 min-h-[170px] sm:min-h-[220px] overflow-hidden w-full min-w-0">
-                  <div className="text-[#D344FF] font-semibold mb-2 break-words" style={{ fontSize: 'clamp(0.875rem, 3vw, 1.25rem)' }}>Motion Control</div>
-                  <p className="text-gray-400 break-words" style={{ fontSize: 'clamp(0.75rem, 2.5vw, 0.875rem)' }}>{description || 'Tạo nhân vật AI chuyển động theo ý muốn'}</p>
+                <div className="bg-[#2a2a2a] rounded-[25px] mb-4 sm:mb-6 aspect-[450/260] overflow-hidden w-full min-w-0">
+                  {previewMedia ? (
+                    previewMedia.type === 'video' ? (
+                      <video
+                        src={previewMedia.src}
+                        autoPlay
+                        loop
+                        muted
+                        playsInline
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <img
+                        src={previewMedia.src}
+                        alt={title}
+                        className="w-full h-full object-cover"
+                      />
+                    )
+                  ) : (
+                    <div className="p-4 sm:p-6 h-full">
+                      <div className="text-[#D344FF] font-semibold mb-2 break-words" style={{ fontSize: 'clamp(0.875rem, 3vw, 1.25rem)' }}>Motion Control</div>
+                      <p className="text-gray-400 break-words" style={{ fontSize: 'clamp(0.75rem, 2.5vw, 0.875rem)' }}>{description || 'Tạo nhân vật AI chuyển động theo ý muốn'}</p>
+                    </div>
+                  )}
                 </div>
                 
                 {/* Upload Areas */}
@@ -707,6 +734,7 @@ export default function FeaturePage3Column({
           </div>
         </div>
       </main>
+      <Footer />
     </div>
   );
 }

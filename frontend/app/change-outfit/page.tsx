@@ -1,39 +1,53 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import Header from '@/components/Header';
-import { Upload, Image as ImageIcon, Loader2, RotateCcw, Trash2, Video, ChevronDown, ArrowRight } from 'lucide-react';
+import Footer from '@/components/Footer';
+import { Image as ImageIcon, Loader2, Download, Heart } from 'lucide-react';
 import axios from 'axios';
 import LoadingPreview from '@/components/LoadingPreview';
-import VideoDurationInfo from '@/components/VideoDurationInfo';
-import { isImageUrl, formatDate, validateFile } from '@/lib/utils';
-import { VideoJob } from '@/lib/types';
+import { isImageUrl, validateFile } from '@/lib/utils';
 import { useFeaturePage } from '@/hooks/useFeaturePage';
 import { FILE_TYPES, FILE_SIZES } from '@/lib/constants';
+
+const CHANGE_OUTFIT_COST = 0.5;
 
 export default function ChangeOutfitPage() {
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [outfitFile, setOutfitFile] = useState<File | null>(null);
-  const [prompt, setPrompt] = useState('');
-  const [isAdvancedOpen, setIsAdvancedOpen] = useState(false);
+  const [imagePreviewUrl, setImagePreviewUrl] = useState<string | null>(null);
+  const [outfitPreviewUrl, setOutfitPreviewUrl] = useState<string | null>(null);
   const [quality, setQuality] = useState('720P');
-  const [qualityCost, setQualityCost] = useState(1);
-  const [isQualityOpen, setIsQualityOpen] = useState(false);
-  const qualityRef = useRef<HTMLDivElement>(null);
-  
+
+  useEffect(() => {
+    if (!imageFile) {
+      setImagePreviewUrl(null);
+      return;
+    }
+    const url = URL.createObjectURL(imageFile);
+    setImagePreviewUrl(url);
+    return () => URL.revokeObjectURL(url);
+  }, [imageFile]);
+
+  useEffect(() => {
+    if (!outfitFile) {
+      setOutfitPreviewUrl(null);
+      return;
+    }
+    const url = URL.createObjectURL(outfitFile);
+    setOutfitPreviewUrl(url);
+    return () => URL.revokeObjectURL(url);
+  }, [outfitFile]);
+
   const {
     session,
     isGenerating,
     setIsGenerating,
-    serverProgress,
-    setServerProgress,
     jobId,
     setJobId,
     previewUrl,
     setPreviewUrl,
-    resultJobs,
     currentDisplayJob,
-    setCurrentDisplayJob,
     progress,
     startPolling,
     handleDelete,
@@ -51,8 +65,6 @@ export default function ChangeOutfitPage() {
         return;
       }
       setImageFile(file);
-      const url = URL.createObjectURL(file);
-      setPreviewUrl(url);
     }
   };
 
@@ -84,7 +96,7 @@ export default function ChangeOutfitPage() {
     const formData = new FormData();
     formData.append('image', imageFile);
     formData.append('outfit_image', outfitFile);
-    if (quality) formData.append('quality', quality);
+    formData.append('quality', quality);
     formData.append('user_id', user_id);
 
     try {
@@ -92,350 +104,208 @@ export default function ChangeOutfitPage() {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
       setJobId(response.data.job_id);
-      
-      // Trigger credits update event for real-time update with amount to deduct
-      window.dispatchEvent(new CustomEvent('credits-updated', {
-        detail: { amount: qualityCost }
-      }));
-      
+
+      window.dispatchEvent(
+        new CustomEvent('credits-updated', { detail: { amount: CHANGE_OUTFIT_COST } })
+      );
+
       startPolling(response.data.job_id);
     } catch (error: any) {
       if (error.response?.status === 402) {
         alert('Không đủ credits!');
       } else {
-        alert('Có lỗi xảy ra: ' + (error.response?.data?.message || error.message));
+        alert(
+          'Có lỗi xảy ra: ' + (error.response?.data?.message || error.message)
+        );
       }
       setIsGenerating(false);
     }
   };
 
+  const displayUrl =
+    currentDisplayJob?.result_url ||
+    (imageFile ? imagePreviewUrl : previewUrl) ||
+    null;
+  const hasPreview = !!displayUrl && isImageUrl(displayUrl);
 
-  const handleRerun = async (job: VideoJob) => {
-    // For change-outfit, we need to re-upload both images
-    if (!imageFile || !outfitFile) {
-      alert('Vui lòng tải lên lại cả ảnh người và ảnh trang phục để rerun!');
-      return;
-    }
-
-    const user_id = (session?.user as any)?.id;
-    if (!user_id) {
-      alert('Vui lòng đăng nhập!');
-      return;
-    }
-
-    setIsGenerating(true);
-    const formData = new FormData();
-    formData.append('image', imageFile);
-    formData.append('outfit_image', outfitFile);
-    if (quality) formData.append('quality', quality);
-    formData.append('user_id', user_id);
-
-    try {
-      const response = await axios.post('/api/videos/change-outfit', formData, {
-        headers: { 'Content-Type': 'multipart/form-data' },
-      });
-      setJobId(response.data.job_id);
-      
-      // Trigger credits update event for real-time update with amount to deduct
-      window.dispatchEvent(new CustomEvent('credits-updated', {
-        detail: { amount: qualityCost }
-      }));
-      
-      startPolling(response.data.job_id);
-    } catch (error: any) {
-      if (error.response?.status === 402) {
-        alert('Không đủ credits!');
-      } else {
-        alert('Có lỗi xảy ra: ' + (error.response?.data?.message || error.message));
-      }
-      setIsGenerating(false);
-    }
+  const handleDownload = () => {
+    if (!displayUrl) return;
+    const link = document.createElement('a');
+    link.href = displayUrl;
+    link.download = `change-outfit-${Date.now()}.jpg`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   };
-
 
   return (
-    <div className="min-h-screen bg-black">
+    <div className="min-h-screen bg-[#0d0d0d]">
       <Header />
       <main className="w-full">
-        <div className="max-w-[1920px] mx-auto px-4 sm:px-8 md:px-[50px] py-8 md:py-12">
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 md:gap-6 min-h-[calc(100vh-200px)]">
-            {/* Left Column - Controls */}
-            <div className="lg:col-span-4 flex flex-col min-w-0">
-              <div className="bg-[#1A1A1A] rounded-[20px] pt-[10px] pb-6 px-4 sm:px-6 border-b border-gray-400/30 h-fit w-full min-w-0">
-                <h1 className="block text-lg sm:text-xl font-medium text-white mb-[15px] pb-[10px] border-b border-gray-400/30 -mx-4 sm:-mx-6 px-4 sm:px-6">Kling Motion Control</h1>
-                
-                {/* Preview Card */}
-                <div className="bg-[#2a2a2a] rounded-[25px] p-4 sm:p-6 mb-4 sm:mb-6 min-h-[170px] sm:min-h-[220px] overflow-hidden w-full min-w-0">
-                  <div className="text-[#D344FF] font-semibold mb-2 break-words" style={{ fontSize: 'clamp(0.875rem, 3vw, 1.25rem)' }}>Motion Control</div>
-                  <p className="text-gray-400 break-words" style={{ fontSize: 'clamp(0.75rem, 2.5vw, 0.875rem)' }}>Tạo nhân vật AI chuyển động theo ý muốn</p>
-                </div>
-                
-                {/* Upload Areas - Horizontal */}
-                <div className="w-full min-w-0 mb-4 sm:mb-6">
-                  <div className="grid grid-cols-2 gap-2 sm:gap-4 min-w-0">
-                  <div className="bg-[#252525] rounded-[20px] p-2 sm:p-4 text-center flex flex-col items-center justify-center aspect-3/4 min-h-0 overflow-hidden min-w-0 shrink-0">
-                    <ImageIcon className="text-white mx-auto mb-1 sm:mb-2 shrink-0" style={{ width: 'clamp(1.25rem, 5vw, 2rem)', height: 'clamp(1.25rem, 5vw, 2rem)' }} />
-                    <input
-                      type="file"
-                      accept="image/*"
-                      onChange={handleImageUpload}
-                      className="hidden"
-                      id="image-upload"
-                    />
-                    <label
-                      htmlFor="image-upload"
-                      className="cursor-pointer w-full px-1"
-                    >
-                      <div className="text-white font-semibold mb-0.5 sm:mb-1 break-words leading-tight" style={{ fontSize: 'clamp(0.625rem, 3vw, 0.875rem)' }}>
-                        {imageFile ? imageFile.name : 'Tải lên ảnh người'}
-                      </div>
-                      {!imageFile && (
-                        <div className="text-gray-400 break-words leading-tight" style={{ fontSize: 'clamp(0.5rem, 2.5vw, 0.75rem)' }}>
-                          Chọn ảnh
-                        </div>
-                      )}
-                    </label>
-                  </div>
-                  
-                  <div className="bg-[#252525] rounded-[20px] p-2 sm:p-4 text-center flex flex-col items-center justify-center aspect-3/4 min-h-0 overflow-hidden min-w-0 shrink-0">
-                    <ImageIcon className="text-white mx-auto mb-1 sm:mb-2 shrink-0" style={{ width: 'clamp(1.25rem, 5vw, 2rem)', height: 'clamp(1.25rem, 5vw, 2rem)' }} />
-                    <input
-                      type="file"
-                      accept="image/*"
-                      onChange={handleOutfitUpload}
-                      className="hidden"
-                      id="outfit-upload"
-                    />
-                    <label
-                      htmlFor="outfit-upload"
-                      className="cursor-pointer w-full px-1"
-                    >
-                      <div className="text-white font-semibold mb-0.5 sm:mb-1 break-words leading-tight" style={{ fontSize: 'clamp(0.625rem, 3vw, 0.875rem)' }}>
-                        {outfitFile ? outfitFile.name : 'Tải lên ảnh trang phục'}
-                      </div>
-                      {!outfitFile && (
-                        <div className="text-gray-400 break-words leading-tight" style={{ fontSize: 'clamp(0.5rem, 2.5vw, 0.75rem)' }}>
-                          Chọn ảnh
-                        </div>
-                      )}
-                    </label>
-                  </div>
-                  </div>
-                </div>
+        <div className="max-w-[1400px] mx-auto px-4 sm:px-6 md:px-8 py-6 md:py-10">
+          {/* Một khối nội dung chính - Thay Trang Phục */}
+          <div className="bg-[#1A1A1A] rounded-[20px] p-6 md:p-8 flex flex-col lg:flex-row gap-6 md:gap-8">
+            {/* Trái: Tiêu đề + mô tả + 2 ô upload + nút */}
+            <div className="flex-1 flex flex-col min-w-0">
+              <h1 className="text-xl md:text-2xl font-bold text-white mb-1">
+                Thay Trang Phục
+              </h1>
+              <p className="text-gray-400 text-sm md:text-base mb-0.5">
+                Bạn có thể thay đổi trang phục yêu thích của mình
+              </p>
+              <p className="text-gray-500 text-xs mb-6">
+                Note: Nên cho ảnh rõ nét, người và quần áo
+              </p>
 
-                {/* Quality Selector */}
-                <div className="mb-4 sm:mb-6 relative w-full min-w-0" ref={qualityRef}>
-                  <div 
-                    className="flex items-center justify-between bg-[#252525] rounded-[20px] px-3 sm:px-4 py-2 cursor-pointer hover:bg-[#3a3a3a] transition-all relative overflow-hidden w-full min-w-0"
-                    onClick={() => setIsQualityOpen(!isQualityOpen)}
-                  >
-                    <div className="flex flex-col min-w-0 flex-1">
-                      <label className="text-white mb-1 break-words" style={{ fontSize: 'clamp(0.625rem, 3vw, 0.875rem)' }}>Chất lượng</label>
-                      <span className="text-white font-semibold break-words" style={{ fontSize: 'clamp(0.625rem, 3vw, 0.875rem)' }}>{quality}</span>
-                    </div>
-                    <ArrowRight className="text-gray-400 shrink-0 ml-2" style={{ width: 'clamp(0.625rem, 3vw, 1rem)', height: 'clamp(0.625rem, 3vw, 1rem)' }} />
-                  </div>
-                  
-                  {/* Quality Dropdown */}
-                  {isQualityOpen && (
-                    <div className="absolute left-full top-0 ml-2 bg-[#1a1a1a] rounded-[20px] p-1.5 z-10 w-[170px]">
-                      <div
-                        onClick={() => {
-                          setQuality('720P');
-                          setQualityCost(1);
-                          setIsQualityOpen(false);
-                        }}
-                        className={`p-2 rounded-[10px] cursor-pointer transition-all mb-1.5 ${
-                          quality === '720P' ? 'bg-[#2a2a2a]' : 'bg-[#1a1a1a] hover:bg-[#2a2a2a]'
-                        }`}
-                      >
-                        <div className="text-white text-sm font-semibold mb-0.5">720P</div>
-                        <div className="text-gray-400 text-xs">Tốn 1 coin</div>
-                      </div>
-                      <div
-                        onClick={() => {
-                          setQuality('1080P');
-                          setQualityCost(2);
-                          setIsQualityOpen(false);
-                        }}
-                        className={`p-2 rounded-[10px] cursor-pointer transition-all ${
-                          quality === '1080P' ? 'bg-[#2a2a2a]' : 'bg-[#1a1a1a] hover:bg-[#2a2a2a]'
-                        }`}
-                      >
-                        <div className="text-white text-sm font-semibold mb-0.5">1080P</div>
-                        <div className="text-gray-400 text-xs">Tốn 2 coin</div>
-                      </div>
-                    </div>
-                  )}
-                </div>
-
-                {/* Advanced Mode */}
-                <div className="mb-4 sm:mb-6 w-full min-w-0">
-                  <button
-                    onClick={() => setIsAdvancedOpen(!isAdvancedOpen)}
-                    className={`w-full flex items-center justify-between rounded-lg px-3 sm:px-4 py-2 transition-all overflow-hidden min-w-0 ${
-                      isAdvancedOpen ? 'bg-[#1A1A1A]' : 'bg-[#1A1A1A] hover:bg-[#3a3a3a]'
-                    }`}
-                  >
-                    <span className="text-white break-words flex-1 text-left" style={{ fontSize: 'clamp(0.625rem, 3vw, 0.875rem)' }}>Chế độ nâng cao</span>
-                    <ChevronDown className={`text-gray-400 transition-transform shrink-0 ml-2 ${isAdvancedOpen ? 'rotate-180' : ''}`} style={{ width: 'clamp(0.625rem, 3vw, 1rem)', height: 'clamp(0.625rem, 3vw, 1rem)' }} />
-                  </button>
-                  
-                  {isAdvancedOpen && (
-                    <div className="mt-4 bg-[#2a2a2a] rounded-[20px] p-3 sm:p-4 overflow-hidden">
-                      <div className="text-white font-semibold mb-2 break-words" style={{ fontSize: 'clamp(0.625rem, 3vw, 0.875rem)' }}>Prompt</div>
-                      <p className="text-white mb-3 break-words leading-tight" style={{ fontSize: 'clamp(0.625rem, 3vw, 0.875rem)' }}>
-                        Bạn có thể miêu tả thêm cho video như nền hay đồ vật hay chi tiết của người để thêm sinh động.
-                      </p>
-                      <textarea
-                        value={prompt}
-                        onChange={(e) => setPrompt(e.target.value)}
-                        placeholder="Nhập prompt của bạn..."
-                        className="w-full bg-[#1a1a1a] text-white rounded-lg px-3 sm:px-4 py-2 sm:py-3 min-h-[100px] sm:min-h-[120px] focus:outline-none resize-none break-words"
-                        style={{ fontSize: 'clamp(0.625rem, 3vw, 0.875rem)' }}
-                      />
-                    </div>
-                  )}
-                </div>
-
-                {/* Progress */}
-                {isGenerating && (
-                  <div className="mb-4 sm:mb-6">
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="text-white text-sm">Đang xử lý...</span>
-                      <span className="text-[#D344FF] text-sm">{progress}%</span>
-                    </div>
-                    <div className="w-full bg-gray-700 rounded-full h-2">
-                      <div
-                        className="bg-[#D344FF] h-2 rounded-full transition-all"
-                        style={{ width: `${progress}%` }}
-                      />
-                    </div>
-                  </div>
-                )}
-
-                {/* Generate Button */}
-                <button
-                  onClick={handleGenerate}
-                  disabled={isGenerating || !imageFile || !outfitFile}
-                  className="w-full px-4 sm:px-6 py-3 sm:py-4 bg-[#D344FF] text-white rounded-[20px] hover:bg-[#B836E6] transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 overflow-hidden"
+              {/* Hai khung nhập ảnh cạnh nhau */}
+              <div className="grid grid-cols-2 gap-3 md:gap-4 mb-4">
+                <label
+                  htmlFor="image-upload"
+                  className="bg-[#252525] rounded-[16px] aspect-3/4 flex flex-col items-center justify-center cursor-pointer hover:bg-[#2a2a2a] transition-colors border-2 border-dashed border-gray-600/50 hover:border-[#D344FF]/40 overflow-hidden"
                 >
-                  {isGenerating ? (
-                    <>
-                      <Loader2 className="w-5 h-5 animate-spin shrink-0" />
-                      <span className="break-words whitespace-nowrap" style={{ fontSize: 'clamp(0.75rem, 3vw, 1rem)' }}>Đang tạo ảnh...</span>
-                    </>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={handleImageUpload}
+                    className="hidden"
+                    id="image-upload"
+                  />
+                  {imagePreviewUrl ? (
+                    <img
+                      src={imagePreviewUrl}
+                      alt="Ảnh người"
+                      className="w-full h-full object-cover"
+                    />
                   ) : (
                     <>
-                      <ImageIcon className="w-5 h-5 shrink-0" />
-                      <span className="break-words whitespace-nowrap" style={{ fontSize: 'clamp(0.75rem, 3vw, 1rem)' }}>Tạo</span>
-                      <span className="shrink-0 whitespace-nowrap" style={{ fontSize: 'clamp(0.625rem, 3vw, 0.875rem)' }}>{qualityCost} Coin</span>
+                      <ImageIcon className="w-10 h-10 text-gray-500 mb-2" />
+                      <span className="text-white font-semibold text-sm text-center px-2">
+                        Thêm ảnh người ở đây
+                      </span>
+                      <span className="text-gray-500 text-xs mt-1">
+                        Ảnh người cần thay
+                      </span>
                     </>
                   )}
-                </button>
-              </div>
-            </div>
+                </label>
 
-            {/* Middle Column - Preview */}
-            <div className="lg:col-span-6 flex items-center justify-center min-h-[400px] lg:min-h-0">
-              <div className="w-full h-full bg-[#1A1A1A] rounded-[25px] flex items-center justify-center p-4 sm:p-8">
-                {(() => {
-                  // Hiển thị loading khi đang generating
-                  if (isGenerating) {
-                    return <LoadingPreview progress={progress} />;
-                  }
-                  
-                  const displayUrl = currentDisplayJob?.result_url || previewUrl;
-                  if (displayUrl) {
-                    if (isImageUrl(displayUrl)) {
-                      return (
-                        <img
-                          src={displayUrl}
-                          alt="Result"
-                          className="max-w-full max-h-full object-contain rounded-lg"
-                        />
-                      );
-                    }
-                    // Video removed - only show images
-                  }
-                  return (
-                    <div className="text-center">
-                      <div className="text-[#D344FF] text-xl sm:text-2xl font-semibold mb-2">Motion Control</div>
-                      <p className="text-gray-400 text-xs sm:text-sm">Thay mọi trang phục bạn muốn</p>
-                    </div>
-                  );
-                })()}
+                <label
+                  htmlFor="outfit-upload"
+                  className="bg-[#252525] rounded-[16px] aspect-3/4 flex flex-col items-center justify-center cursor-pointer hover:bg-[#2a2a2a] transition-colors border-2 border-dashed border-gray-600/50 hover:border-[#D344FF]/40 overflow-hidden"
+                >
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={handleOutfitUpload}
+                    className="hidden"
+                    id="outfit-upload"
+                  />
+                  {outfitPreviewUrl ? (
+                    <img
+                      src={outfitPreviewUrl}
+                      alt="Ảnh trang phục"
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <>
+                      <ImageIcon className="w-10 h-10 text-gray-500 mb-2" />
+                      <span className="text-white font-semibold text-sm text-center px-2">
+                        Thêm ảnh trang phục
+                      </span>
+                      <span className="text-gray-500 text-xs mt-1">
+                        Ảnh trang phục bạn cần thay
+                      </span>
+                    </>
+                  )}
+                </label>
               </div>
-            </div>
 
-            {/* Right Column - Results/History */}
-            <div className="lg:col-span-2 flex flex-col min-h-[400px] lg:min-h-0">
-              <div className="bg-[#131313] rounded-[20px] px-[15px] pt-[20px] pb-4 sm:pb-6 overflow-y-auto h-full flex flex-col">
-                {currentDisplayJob ? (
+              {/* Nút Tạo ảnh - full width, gradient tím, 0.5 Coin */}
+              <button
+                onClick={handleGenerate}
+                disabled={isGenerating || !imageFile || !outfitFile}
+                className="w-full py-3.5 rounded-[16px] bg-gradient-to-r from-[#D344FF] to-[#B836E6] text-white font-semibold flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed hover:opacity-95 transition-opacity"
+              >
+                {isGenerating ? (
                   <>
-                    <div className="flex flex-wrap items-center justify-between gap-2 mb-4 min-w-0 w-full">
-                      <div className="bg-[#101010] border border-gray-400/30 rounded-[10px] px-2 py-1 text-white text-[9px] sm:text-[10px] font-medium whitespace-nowrap shrink-0 max-w-full overflow-hidden">
-                        Kling motion control 2.6
-                      </div>
-                      {currentDisplayJob.created_at && (
-                        <p className="text-white text-xs ml-auto">{formatDate(currentDisplayJob.created_at)}</p>
-                      )}
-                    </div>
-                    
-                    {/* Info Section - Quality and Duration */}
-                    {currentDisplayJob.result_url && (() => {
-                      const isImage = isImageUrl(currentDisplayJob.result_url);
-                      const quality = '1080p';
-                      
-                      return (
-                        <div className="mb-4 flex gap-2">
-                          {isImage ? (
-                            <span className="bg-[#2a2a2a] text-white text-xs px-2 py-1 rounded-full flex items-center gap-1">
-                              <ImageIcon className="w-3 h-3" />
-                              {quality}
-                            </span>
-                          ) : (
-                            <>
-                              <span className="bg-[#2a2a2a] text-white text-xs px-2 py-1 rounded-full flex items-center gap-1">
-                                <Video className="w-3 h-3" />
-                                {quality}
-                              </span>
-                              <VideoDurationInfo url={currentDisplayJob.result_url} />
-                            </>
-                          )}
-                        </div>
-                      );
-                    })()}
-                    
-                    {/* Bottom Actions */}
-                    <div className="mt-auto pt-4 border-t border-gray-400/20 flex items-center justify-between">
-                      <button
-                        onClick={() => handleRerun(currentDisplayJob)}
-                        className="flex items-center gap-2 text-white text-xs hover:text-gray-300 transition-colors cursor-pointer"
-                      >
-                        <RotateCcw className="w-4 h-4" />
-                        <span>Reset</span>
-                      </button>
-                      <button
-                        onClick={handleDelete}
-                        className="text-white hover:text-red-400 transition-colors cursor-pointer"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    </div>
+                    <Loader2 className="w-5 h-5 animate-spin" />
+                    <span>Đang tạo ảnh...</span>
                   </>
                 ) : (
-                  <div className="flex flex-wrap items-center justify-between gap-2 mb-4 min-w-0 w-full">
-                    <div className="bg-[#101010] border border-gray-400/30 rounded-[10px] px-2 py-1 text-white text-[9px] sm:text-[10px] font-medium whitespace-nowrap shrink-0 max-w-full overflow-hidden">
-                      Kling motion control 2.6
-                    </div>
+                  <>
+                    <span>Tạo ảnh</span>
+                    <span className="text-white/90 text-sm">
+                      {CHANGE_OUTFIT_COST} Coin
+                    </span>
+                  </>
+                )}
+              </button>
+
+              {/* Progress khi đang tạo */}
+              {isGenerating && (
+                <div className="mt-4">
+                  <div className="flex items-center justify-between text-sm text-gray-400 mb-1">
+                    <span>Đang xử lý...</span>
+                    <span className="text-[#D344FF]">{progress}%</span>
+                  </div>
+                  <div className="w-full h-1.5 bg-gray-700 rounded-full overflow-hidden">
+                    <div
+                      className="h-full bg-[#D344FF] rounded-full transition-all duration-300"
+                      style={{ width: `${progress}%` }}
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Phải: Khung preview với overlay icon tim + download */}
+            <div className="flex-1 min-h-[320px] lg:min-h-[400px] relative">
+              <div className="bg-[#252525] rounded-[20px] w-full h-full min-h-[320px] flex items-center justify-center overflow-hidden relative">
+                {isGenerating && (
+                  <div className="absolute inset-0 z-10 flex items-center justify-center bg-[#252525]/90">
+                    <LoadingPreview progress={progress} />
                   </div>
                 )}
+
+                {!isGenerating && hasPreview && (
+                  <img
+                    src={displayUrl}
+                    alt="Kết quả"
+                    className="max-w-full max-h-full object-contain rounded-lg"
+                  />
+                )}
+
+                {!isGenerating && !hasPreview && (
+                  <span className="text-gray-500 text-base md:text-lg">
+                    Ảnh preview
+                  </span>
+                )}
+
+                {/* Overlay icons góc trên phải: tim + download - luôn hiển thị */}
+                <div className="absolute top-4 right-4 flex flex-col gap-2 z-10">
+                  <button
+                    type="button"
+                    className="w-10 h-10 bg-[#2a2a2a]/80 backdrop-blur-sm rounded-full flex items-center justify-center hover:bg-[#2a2a2a] transition-colors border border-white/10 cursor-pointer"
+                    aria-label="Yêu thích"
+                  >
+                    <Heart className="w-5 h-5 text-white" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleDownload}
+                    disabled={!hasPreview}
+                    className="w-10 h-10 bg-[#2a2a2a]/80 backdrop-blur-sm rounded-full flex items-center justify-center hover:bg-[#2a2a2a] transition-colors border border-white/10 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                    aria-label="Tải xuống"
+                  >
+                    <Download className="w-5 h-5 text-white" />
+                  </button>
+                </div>
               </div>
             </div>
           </div>
         </div>
       </main>
+      <Footer />
     </div>
   );
 }

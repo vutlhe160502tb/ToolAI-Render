@@ -3,6 +3,8 @@
   "version": "1.0.0",
   "description": "AI Dancing - AI Video Generation App",
   "scripts": {
+    "build": "cd frontend && npm ci && npm run build",
+    "start": "cd frontend && npm run start",
     "dev": "concurrently --kill-others-on-fail --kill-others \"npm run dev:backend\" \"npm run dev:frontend\"",
     "dev:frontend": "cd frontend && npm run dev",
     "dev:backend": "cd backend && python -m uvicorn main:app --reload --port 8000 --log-level error --no-access-log",

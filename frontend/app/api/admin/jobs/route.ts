@@ -1,6 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { requireAdminApi } from '@/lib/admin-auth';
+
+export const runtime = 'nodejs';
 
 export async function GET(request: NextRequest) {
+  const unauthorized = requireAdminApi(request);
+  if (unauthorized) return unauthorized;
+
   try {
     const { searchParams } = new URL(request.url);
     const status = searchParams.get('status') || 'all';

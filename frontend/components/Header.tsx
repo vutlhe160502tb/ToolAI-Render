@@ -42,8 +42,30 @@ export default function Header() {
       if (response.data && response.data.credits !== undefined) {
         setCredits(response.data.credits);
       }
-    } catch (error) {
-      console.error('Error fetching credits:', error);
+    } catch (error: any) {
+      // Nếu user_id trong session bị stale (backend không có user), thử fallback bằng email
+      const status = error?.response?.status;
+      if (status === 404 && session.user?.email) {
+        try {
+          const r = await axios.get(
+            `/api/users/by-email/${encodeURIComponent(session.user.email)}`,
+          );
+          const recoveredUserId = r.data?.user_id;
+          if (recoveredUserId) {
+            const creditsRes = await axios.get(
+              `/api/users/credits?user_id=${recoveredUserId}`,
+            );
+            if (creditsRes.data && creditsRes.data.credits !== undefined) {
+              setCredits(creditsRes.data.credits);
+              return;
+            }
+          }
+        } catch (e) {
+          console.error('Error recovering user_id/credits:', e);
+        }
+      } else {
+        console.error('Error fetching credits:', error);
+      }
       setCredits(0);
     }
   }, [session]);

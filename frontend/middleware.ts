@@ -3,26 +3,20 @@ import { NextResponse } from 'next/server';
 
 export default withAuth(
   function middleware(req) {
-    const token = req.nextauth.token;
-    const isAdmin = token?.isAdmin as boolean | undefined;
     const pathname = req.nextUrl.pathname;
 
     // Allow access to login page and API routes
-    if (pathname.startsWith('/login') || pathname.startsWith('/api/')) {
+    if (
+      pathname.startsWith('/login') ||
+      pathname.startsWith('/api/') ||
+      pathname.startsWith('/surrealAdmin')
+    ) {
       return NextResponse.next();
     }
 
-    // Nếu là admin, chỉ cho phép vào /admin
-    if (isAdmin) {
-      if (!pathname.startsWith('/admin')) {
-        // Redirect admin khỏi các trang user
-        return NextResponse.redirect(new URL('/admin', req.url));
-      }
-    } else {
-      // Nếu là user thường, không cho vào /admin
-      if (pathname.startsWith('/admin')) {
-        return NextResponse.redirect(new URL('/', req.url));
-      }
+    // Legacy route: redirect /admin -> /surrealAdmin
+    if (pathname.startsWith('/admin')) {
+      return NextResponse.redirect(new URL('/surrealAdmin', req.url));
     }
     
     return NextResponse.next();
@@ -30,9 +24,15 @@ export default withAuth(
   {
     callbacks: {
       authorized: ({ token, req }) => {
-        // Allow access to login page and API routes without auth
-        if (req.nextUrl.pathname.startsWith('/login') || 
-            req.nextUrl.pathname.startsWith('/api/')) {
+        const pathname = req.nextUrl.pathname;
+
+        // Allow access without NextAuth
+        if (
+          pathname.startsWith('/login') ||
+          pathname.startsWith('/api/') ||
+          pathname.startsWith('/surrealAdmin') ||
+          pathname.startsWith('/admin')
+        ) {
           return true;
         }
         

@@ -13,12 +13,7 @@ export default function LoginPage() {
   // Nếu đã login, redirect dựa trên role
   useEffect(() => {
     if (status === 'authenticated' && session) {
-      const isAdmin = (session.user as any)?.isAdmin;
-      if (isAdmin) {
-        router.push('/admin');
-      } else {
-        router.push('/');
-      }
+      router.push('/');
     }
   }, [session, status, router]);
 

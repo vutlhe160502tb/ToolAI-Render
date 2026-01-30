@@ -153,7 +153,7 @@ export default function Home() {
         <div className="max-w-[1920px] mx-auto px-4 sm:px-8 md:px-[50px] py-8 md:py-12">
           <div className="text-center mb-12">
             <h1 className="text-5xl md:text-6xl lg:text-7xl xl:text-8xl font-bold bg-gradient-to-b from-[#D344FF] to-white bg-clip-text text-transparent">
-              Surreal.AI
+              Phù Thuỷ AI 
             </h1>
           </div>
         </div>

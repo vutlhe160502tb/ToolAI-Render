@@ -11,7 +11,7 @@ export default function Footer() {
           {/* Brand Name - Center */}
           <div className="text-center mb-6">
             <h2 className="text-5xl md:text-6xl lg:text-7xl font-bold bg-gradient-to-r from-black via-[#8B2AB3] to-[#8B2AB3] bg-clip-text text-transparent">
-              Surreal AI
+              Phù Thuỷ AI 
             </h2>
           </div>
 
@@ -46,7 +46,7 @@ export default function Footer() {
       <div className="bg-black py-4 border-t border-gray-800">
         <div className="max-w-[1920px] mx-auto px-4 sm:px-8 md:px-[50px]">
           <p className="text-center text-white text-xs md:text-sm">
-            © 2026 Surreal AI™. All Rights Reserved.
+            © 2026 Phù Thuỷ AI™. All Rights Reserved.
           </p>
         </div>
       </div>

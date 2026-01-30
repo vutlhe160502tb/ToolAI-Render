@@ -1,7 +1,7 @@
 {
   "name": "ai-dancing",
   "version": "1.0.0",
-  "description": "AI Dancing - AI Video Generation App",
+  "description": "Phù Thuỷ AI - Bẻ cong timeline",
   "private": true,
   "workspaces": [
     "frontend",

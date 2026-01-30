@@ -12,7 +12,7 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "Ai Dancing - AI Video Generation",
+  title: "Phù Thuỷ AI - Bẻ cong timeline",
   description: "Tạo video AI với nhiều tính năng đa dạng",
 };
 

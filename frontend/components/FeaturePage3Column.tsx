@@ -6,6 +6,7 @@ import Footer from '@/components/Footer';
 import { Video, Loader2, Image as ImageIcon, RotateCcw, Trash2, Music, ChevronDown, ArrowRight } from 'lucide-react';
 import axios from 'axios';
 import { useSession } from 'next-auth/react';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useProgressBar } from '@/hooks/useProgressBar';
 import LoadingPreview from '@/components/LoadingPreview';
 import { truncateFilenameForTooltip } from '@/lib/utils';
@@ -100,6 +101,9 @@ export default function FeaturePage3Column({
   previewMedia
 }: FeaturePage3ColumnProps) {
   const { data: session } = useSession();
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
   const [files, setFiles] = useState<Record<string, File | null>>({});
   const [filePreviewUrls, setFilePreviewUrls] = useState<Record<string, string>>({});
   const [fileNameTooltip, setFileNameTooltip] = useState<{ x: number; y: number; name: string } | null>(null);
@@ -248,16 +252,19 @@ export default function FeaturePage3Column({
   };
 
   const handleGenerate = async () => {
+    const user_id = (session?.user as any)?.id;
+    if (!user_id) {
+      const qs = searchParams?.toString();
+      const basePath = pathname || '/';
+      const callbackUrl = qs ? `${basePath}?${qs}` : basePath;
+      router.push(`/login?callbackUrl=${encodeURIComponent(callbackUrl)}`);
+      return;
+    }
+
     // Check all required files
     const missingFiles = fileInputs.filter(inp => !files[inp.name]);
     if (missingFiles.length > 0) {
       alert(`Vui lòng tải lên: ${missingFiles.map(f => f.label).join(', ')}`);
-      return;
-    }
-
-    const user_id = (session?.user as any)?.id;
-    if (!user_id) {
-      alert('Vui lòng đăng nhập để sử dụng tính năng này!');
       return;
     }
 
@@ -298,7 +305,10 @@ export default function FeaturePage3Column({
       startPolling(response.data.job_id);
     } catch (error: any) {
       if (error.response?.status === 402) {
-        alert('Không đủ credits!');
+        const qs = searchParams?.toString();
+        const basePath = pathname || '/';
+        const callbackUrl = qs ? `${basePath}?${qs}` : basePath;
+        router.push(`/credits?callbackUrl=${encodeURIComponent(callbackUrl)}`);
       } else {
         alert('Có lỗi xảy ra: ' + (error.response?.data?.message || error.message));
       }
@@ -367,7 +377,10 @@ export default function FeaturePage3Column({
 
     const user_id = (session?.user as any)?.id;
     if (!user_id) {
-      alert('Vui lòng đăng nhập!');
+      const qs = searchParams?.toString();
+      const basePath = pathname || '/';
+      const callbackUrl = qs ? `${basePath}?${qs}` : basePath;
+      router.push(`/login?callbackUrl=${encodeURIComponent(callbackUrl)}`);
       return;
     }
 
@@ -406,7 +419,10 @@ export default function FeaturePage3Column({
       startPolling(response.data.job_id);
     } catch (error: any) {
       if (error.response?.status === 402) {
-        alert('Không đủ credits!');
+        const qs = searchParams?.toString();
+        const basePath = pathname || '/';
+        const callbackUrl = qs ? `${basePath}?${qs}` : basePath;
+        router.push(`/credits?callbackUrl=${encodeURIComponent(callbackUrl)}`);
       } else {
         alert('Có lỗi xảy ra: ' + (error.response?.data?.message || error.message));
       }
@@ -678,7 +694,7 @@ export default function FeaturePage3Column({
                 {/* Generate Button */}
                 <button
                   onClick={handleGenerate}
-                  disabled={isGenerating || !allFilesUploaded}
+                  disabled={isGenerating}
                   className="w-full px-4 sm:px-6 py-3 sm:py-4 bg-[#D344FF] text-white rounded-[20px] hover:bg-[#B836E6] transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 overflow-hidden min-w-0"
                 >
                   {isGenerating ? (

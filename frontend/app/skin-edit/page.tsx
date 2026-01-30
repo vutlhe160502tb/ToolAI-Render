@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import { Image as ImageIcon, Loader2, Download, Heart } from 'lucide-react';
@@ -18,6 +18,8 @@ type SkinType = 'smooth' | 'real' | 'imperfect' | null;
 
 export default function SkinEditPage() {
   const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreviewUrl, setImagePreviewUrl] = useState<string | null>(null);
   const [fileNameTooltip, setFileNameTooltip] = useState<{ x: number; y: number } | null>(null);
@@ -66,14 +68,17 @@ export default function SkinEditPage() {
   };
 
   const handleGenerate = async () => {
-    if (!imageFile) {
-      alert('Vui lòng tải lên ảnh!');
+    const user_id = (session?.user as any)?.id;
+    if (!user_id) {
+      const qs = searchParams?.toString();
+      const basePath = pathname || '/';
+      const callbackUrl = qs ? `${basePath}?${qs}` : basePath;
+      router.push(`/login?callbackUrl=${encodeURIComponent(callbackUrl)}`);
       return;
     }
 
-    const user_id = (session?.user as any)?.id;
-    if (!user_id) {
-      alert('Vui lòng đăng nhập để sử dụng tính năng này!');
+    if (!imageFile) {
+      alert('Vui lòng tải lên ảnh!');
       return;
     }
 
@@ -96,7 +101,10 @@ export default function SkinEditPage() {
       startPolling(response.data.job_id);
     } catch (error: any) {
       if (error.response?.status === 402) {
-        alert('Không đủ credits!');
+        const qs = searchParams?.toString();
+        const basePath = pathname || '/';
+        const callbackUrl = qs ? `${basePath}?${qs}` : basePath;
+        router.push(`/credits?callbackUrl=${encodeURIComponent(callbackUrl)}`);
       } else {
         alert(
           'Có lỗi xảy ra: ' + (error.response?.data?.message || error.message)
@@ -312,7 +320,7 @@ export default function SkinEditPage() {
                 {/* Generate Button */}
                 <button
                   onClick={handleGenerate}
-                  disabled={isGenerating || !imageFile}
+                  disabled={isGenerating}
                   className="w-full px-6 py-4 bg-gradient-to-r from-[#D344FF] to-[#FF6B9D] text-white rounded-[20px] hover:opacity-90 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 font-semibold text-lg"
                 >
                   {isGenerating ? (

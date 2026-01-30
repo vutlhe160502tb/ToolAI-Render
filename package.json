@@ -2,15 +2,23 @@
   "name": "ai-dancing",
   "version": "1.0.0",
   "description": "AI Dancing - AI Video Generation App",
+  "private": true,
+  "workspaces": [
+    "frontend",
+    "landing"
+  ],
   "scripts": {
-    "build": "cd frontend && npm install && npm run build",
-    "start": "cd frontend && npm run start",
+    "build": "npm install && npm --workspace frontend run build",
+    "build:landing": "npm install && npm --workspace landing run build",
+    "start": "npm --workspace frontend run start",
+    "start:landing": "npm --workspace landing run start",
     "dev": "concurrently --kill-others-on-fail --kill-others \"npm run dev:backend\" \"npm run dev:frontend\"",
-    "dev:frontend": "cd frontend && npm run dev",
+    "dev:frontend": "npm --workspace frontend run dev",
+    "dev:landing": "npm --workspace landing run dev",
     "dev:backend": "cd backend && python -m uvicorn main:app --reload --port 8000 --log-level error --no-access-log",
-    "install:all": "cd frontend && npm install && cd ../backend && pip install -r requirements.txt",
-    "clean": "cd frontend && npm run clean && cd ../backend && find . -type d -name '__pycache__' -exec rm -r {} + 2>/dev/null; find . -name '*.pyc' -delete 2>/dev/null; rm -rf .pytest_cache 2>/dev/null",
-    "clean:all": "npm run clean && cd frontend && rm -rf node_modules && cd .."
+    "install:all": "npm install && cd backend && pip install -r requirements.txt",
+    "clean": "npm --workspace frontend run clean && npm --workspace landing run clean && cd backend && find . -type d -name '__pycache__' -exec rm -r {} + 2>/dev/null; find . -name '*.pyc' -delete 2>/dev/null; rm -rf .pytest_cache 2>/dev/null",
+    "clean:all": "npm run clean && rm -rf node_modules && cd frontend && rm -rf node_modules && cd ../landing && rm -rf node_modules && cd .."
   },
   "devDependencies": {
     "concurrently": "^9.2.1"

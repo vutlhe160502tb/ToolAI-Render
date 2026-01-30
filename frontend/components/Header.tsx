@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { Folder, Image, Video, Sparkles, Coins, LogOut } from 'lucide-react';
 import { useSession, signOut } from 'next-auth/react';
 import { useState, useEffect, useRef, useCallback } from 'react';
+import { usePathname, useSearchParams } from 'next/navigation';
 import axios from 'axios';
 
 export default function Header() {
@@ -11,6 +12,13 @@ export default function Header() {
   const [credits, setCredits] = useState<number | null>(null);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+
+  const currentUrl = (() => {
+    const qs = searchParams?.toString();
+    return `${pathname}${qs ? `?${qs}` : ''}`;
+  })();
 
   const fetchCredits = useCallback(async () => {
     if (!session) return;
@@ -261,7 +269,7 @@ export default function Header() {
               </div>
             ) : (
               <Link
-                href="/login"
+                href={`/login?callbackUrl=${encodeURIComponent(currentUrl)}`}
                 className="w-8 h-8 bg-white rounded-full flex items-center justify-center"
               >
                 <span className="text-gray-800 text-xs font-semibold">?</span>

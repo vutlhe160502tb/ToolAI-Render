@@ -5,9 +5,8 @@ Landing page độc lập nằm trong folder `landing/` (không ảnh hưởng `
 ## Chạy local
 
 ```bash
-cd landing
 npm install
-npm run dev
+npm --workspace landing run dev
 ```
 
 Mặc định chạy tại `http://localhost:3000`.
@@ -15,8 +14,7 @@ Mặc định chạy tại `http://localhost:3000`.
 ## Build/Start
 
 ```bash
-cd landing
-npm run build
-npm run start
+npm --workspace landing run build
+npm --workspace landing run start
 ```
 

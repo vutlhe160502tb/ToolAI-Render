@@ -4,6 +4,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { X, Loader2, CheckCircle, XCircle } from 'lucide-react';
 import Image from 'next/image';
 import axios from 'axios';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 import { useToast } from '@/contexts/ToastContext';
 
@@ -18,6 +19,9 @@ interface QRPaymentModalProps {
 
 export default function QRPaymentModal({ package: pkg, onClose }: QRPaymentModalProps) {
   const { data: session } = useSession();
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
   const { showToast } = useToast();
   const [transactionId, setTransactionId] = useState<string | null>(null);
   const [paymentCode, setPaymentCode] = useState<string | null>(null);
@@ -72,13 +76,16 @@ export default function QRPaymentModal({ package: pkg, onClose }: QRPaymentModal
     if (session && !userId && !user_email) {
       const timer = setTimeout(() => {
         console.error('No user_id or email available after fetch attempt');
-        alert('Vui lòng đăng nhập để nạp coin');
+        const qs = searchParams?.toString();
+        const basePath = pathname || '/';
+        const callbackUrl = qs ? `${basePath}?${qs}` : basePath;
+        router.push(`/login?callbackUrl=${encodeURIComponent(callbackUrl)}`);
         onClose();
       }, 2000); // Wait 2 seconds for fetch to complete
       
       return () => clearTimeout(timer);
     }
-  }, [session, userId, user_email, onClose]);
+  }, [session, userId, user_email, onClose, pathname, router, searchParams]);
 
   const startPolling = useCallback((identifier: string) => {
     // Clear any existing interval
@@ -141,7 +148,10 @@ export default function QRPaymentModal({ package: pkg, onClose }: QRPaymentModal
     // Validate user_id before making request
     if (!userId) {
       console.error('User ID is missing, userId:', userId);
-      alert('Vui lòng đăng nhập để nạp coin');
+      const qs = searchParams?.toString();
+      const basePath = pathname || '/';
+      const callbackUrl = qs ? `${basePath}?${qs}` : basePath;
+      router.push(`/login?callbackUrl=${encodeURIComponent(callbackUrl)}`);
       setPaymentStatus('failed');
       onClose();
       return;
@@ -199,7 +209,7 @@ export default function QRPaymentModal({ package: pkg, onClose }: QRPaymentModal
       // Reset orderCreatedRef on error so user can retry
       orderCreatedRef.current = false;
     }
-  }, [pkg, startPolling, userId, onClose]);
+  }, [pkg, startPolling, userId, onClose, pathname, router, searchParams]);
 
   // Create payment order when modal opens (every time = new order)
   useEffect(() => {

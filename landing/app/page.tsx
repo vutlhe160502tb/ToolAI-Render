@@ -103,7 +103,7 @@ export default function App() {
                             className="w-full h-full object-cover"
                           />
                         </div>
-                        <h2 className="text-xs sm:text-sm md:text-base lg:text-lg font-bold text-white mb-[5px] transition-all truncate pl-1 sm:pl-1.5 md:pl-2">
+                        <h2 className="text-xs sm:text-sm md:text-base lg:text-lg font-bold text-white group-hover/card:bg-gradient-to-b group-hover/card:from-[#D344FF] group-hover/card:to-white/70 group-hover/card:bg-clip-text group-hover/card:text-transparent mb-[5px] transition-all truncate pl-1 sm:pl-1.5 md:pl-2">
                           Tạo Ảnh
                         </h2>
                         <p className="text-gray-400 text-xs sm:text-xs md:text-sm leading-relaxed truncate shrink pl-1 sm:pl-1.5 md:pl-2 -mt-1">
@@ -124,7 +124,7 @@ export default function App() {
                             className="w-full h-full object-cover"
                           />
                         </div>
-                        <h2 className="text-xs sm:text-sm md:text-base lg:text-lg font-bold text-white mb-[5px] transition-all truncate pl-1 sm:pl-1.5 md:pl-2">
+                        <h2 className="text-xs sm:text-sm md:text-base lg:text-lg font-bold text-white group-hover/card:bg-gradient-to-b group-hover/card:from-[#D344FF] group-hover/card:to-white/70 group-hover/card:bg-clip-text group-hover/card:text-transparent mb-[5px] transition-all truncate pl-1 sm:pl-1.5 md:pl-2">
                           Tạo Video
                         </h2>
                         <p className="text-gray-400 text-xs sm:text-xs md:text-sm leading-relaxed truncate shrink pl-1 sm:pl-1.5 md:pl-2 -mt-1">
@@ -145,7 +145,7 @@ export default function App() {
                             className="w-full h-full object-cover"
                           />
                         </div>
-                        <h2 className="text-xs sm:text-sm md:text-base lg:text-lg font-bold text-white mb-[5px] transition-all truncate pl-1 sm:pl-1.5 md:pl-2">
+                        <h2 className="text-xs sm:text-sm md:text-base lg:text-lg font-bold text-white group-hover/card:bg-gradient-to-b group-hover/card:from-[#D344FF] group-hover/card:to-white/70 group-hover/card:bg-clip-text group-hover/card:text-transparent mb-[5px] transition-all truncate pl-1 sm:pl-1.5 md:pl-2">
                           Tạo Chuyển Động
                         </h2>
                         <p className="text-gray-400 text-xs sm:text-xs md:text-sm leading-relaxed truncate shrink pl-1 sm:pl-1.5 md:pl-2 -mt-1">
@@ -197,7 +197,7 @@ export default function App() {
                             className="w-full h-full object-cover"
                           />
                         </div>
-                        <h2 className="text-sm sm:text-base md:text-lg lg:text-xl font-bold text-white mb-[5px] transition-all truncate pl-1 sm:pl-1.5 md:pl-2">
+                        <h2 className="text-sm sm:text-base md:text-lg lg:text-xl font-bold text-white group-hover/card:bg-gradient-to-b group-hover/card:from-[#D344FF] group-hover/card:to-white/70 group-hover/card:bg-clip-text group-hover/card:text-transparent mb-[5px] transition-all truncate pl-1 sm:pl-1.5 md:pl-2">
                           Google Banana Pro
                         </h2>
                         <p className="text-gray-400 text-xs sm:text-sm md:text-base leading-relaxed truncate shrink pl-1 sm:pl-1.5 md:pl-2 -mt-1">
@@ -218,7 +218,7 @@ export default function App() {
                             className="w-full h-full object-cover"
                           />
                         </div>
-                        <h2 className="text-sm sm:text-base md:text-lg lg:text-xl font-bold text-white mb-[5px] transition-all truncate pl-1 sm:pl-1.5 md:pl-2">
+                        <h2 className="text-sm sm:text-base md:text-lg lg:text-xl font-bold text-white group-hover/card:bg-gradient-to-b group-hover/card:from-[#D344FF] group-hover/card:to-white/70 group-hover/card:bg-clip-text group-hover/card:text-transparent mb-[5px] transition-all truncate pl-1 sm:pl-1.5 md:pl-2">
                           Nhảy Với Nền Từ Ảnh
                         </h2>
                         <p className="text-gray-400 text-xs sm:text-sm md:text-base leading-relaxed truncate shrink pl-1 sm:pl-1.5 md:pl-2 -mt-1">
@@ -239,7 +239,7 @@ export default function App() {
                             className="w-full h-full object-cover"
                           />
                         </div>
-                        <h2 className="text-sm sm:text-base md:text-lg lg:text-xl font-bold text-white mb-[5px] transition-all truncate pl-1 sm:pl-1.5 md:pl-2">
+                        <h2 className="text-sm sm:text-base md:text-lg lg:text-xl font-bold text-white group-hover/card:bg-gradient-to-b group-hover/card:from-[#D344FF] group-hover/card:to-white/70 group-hover/card:bg-clip-text group-hover/card:text-transparent mb-[5px] transition-all truncate pl-1 sm:pl-1.5 md:pl-2">
                           Nhảy Với Nền Từ Video
                         </h2>
                         <p className="text-gray-400 text-xs sm:text-sm md:text-base leading-relaxed truncate shrink pl-1 sm:pl-1.5 md:pl-2 -mt-1">
@@ -262,7 +262,7 @@ export default function App() {
                             style={{ color: "transparent" }}
                           />
                         </div>
-                        <h2 className="text-sm sm:text-base md:text-lg lg:text-xl font-bold text-white mb-[5px] transition-all truncate pl-1 sm:pl-1.5 md:pl-2">
+                        <h2 className="text-sm sm:text-base md:text-lg lg:text-xl font-bold text-white group-hover/card:bg-gradient-to-b group-hover/card:from-[#D344FF] group-hover/card:to-white/70 group-hover/card:bg-clip-text group-hover/card:text-transparent mb-[5px] transition-all truncate pl-1 sm:pl-1.5 md:pl-2">
                           Thay Trang Phục
                         </h2>
                         <p className="text-gray-400 text-xs sm:text-sm md:text-base leading-relaxed truncate shrink pl-1 sm:pl-1.5 md:pl-2 -mt-1">

@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import { Upload, Video, Loader2, RotateCcw, Trash2, Image as ImageIcon, ChevronDown, ArrowRight } from 'lucide-react';
@@ -13,6 +14,9 @@ import { useFeaturePage } from '@/hooks/useFeaturePage';
 import { FILE_TYPES, FILE_SIZES } from '@/lib/constants';
 
 export default function CreateVideoPage() {
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
   const [file, setFile] = useState<File | null>(null);
   const [filePreviewUrl, setFilePreviewUrl] = useState<string | null>(null);
   const [fileNameTooltip, setFileNameTooltip] = useState<{ x: number; y: number } | null>(null);
@@ -70,7 +74,10 @@ export default function CreateVideoPage() {
   const handleGenerate = async () => {
     const user_id = (session?.user as any)?.id;
     if (!user_id) {
-      alert('Vui lòng đăng nhập để sử dụng tính năng này!');
+      const qs = searchParams?.toString();
+      const basePath = pathname || '/';
+      const callbackUrl = qs ? `${basePath}?${qs}` : basePath;
+      router.push(`/login?callbackUrl=${encodeURIComponent(callbackUrl)}`);
       return;
     }
 
@@ -95,7 +102,10 @@ export default function CreateVideoPage() {
       startPolling(response.data.job_id);
     } catch (error: any) {
       if (error.response?.status === 402) {
-        alert('Không đủ credits!');
+        const qs = searchParams?.toString();
+        const basePath = pathname || '/';
+        const callbackUrl = qs ? `${basePath}?${qs}` : basePath;
+        router.push(`/credits?callbackUrl=${encodeURIComponent(callbackUrl)}`);
       } else {
         alert('Có lỗi xảy ra: ' + (error.response?.data?.message || error.message));
       }
@@ -117,7 +127,10 @@ export default function CreateVideoPage() {
 
     const user_id = (session?.user as any)?.id;
     if (!user_id) {
-      alert('Vui lòng đăng nhập!');
+      const qs = searchParams?.toString();
+      const basePath = pathname || '/';
+      const callbackUrl = qs ? `${basePath}?${qs}` : basePath;
+      router.push(`/login?callbackUrl=${encodeURIComponent(callbackUrl)}`);
       return;
     }
 
@@ -155,7 +168,10 @@ export default function CreateVideoPage() {
       startPolling(response.data.job_id);
     } catch (error: any) {
       if (error.response?.status === 402) {
-        alert('Không đủ credits!');
+        const qs = searchParams?.toString();
+        const basePath = pathname || '/';
+        const callbackUrl = qs ? `${basePath}?${qs}` : basePath;
+        router.push(`/credits?callbackUrl=${encodeURIComponent(callbackUrl)}`);
       } else {
         alert('Có lỗi xảy ra: ' + (error.response?.data?.message || error.message));
       }

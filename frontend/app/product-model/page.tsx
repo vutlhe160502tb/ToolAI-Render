@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import { Image as ImageIcon, Loader2, Download, Heart } from 'lucide-react';
@@ -13,6 +14,9 @@ import { FILE_TYPES, FILE_SIZES } from '@/lib/constants';
 const PRODUCT_MODEL_COST = 0.5;
 
 export default function ProductModelPage() {
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
   const [productFile, setProductFile] = useState<File | null>(null);
   const [personFile, setPersonFile] = useState<File | null>(null);
   const [productPreviewUrl, setProductPreviewUrl] = useState<string | null>(null);
@@ -80,14 +84,17 @@ export default function ProductModelPage() {
   };
 
   const handleGenerate = async () => {
-    if (!productFile || !personFile) {
-      alert('Vui lòng tải lên cả ảnh sản phẩm và ảnh người mẫu!');
+    const user_id = (session?.user as any)?.id;
+    if (!user_id) {
+      const qs = searchParams?.toString();
+      const basePath = pathname || '/';
+      const callbackUrl = qs ? `${basePath}?${qs}` : basePath;
+      router.push(`/login?callbackUrl=${encodeURIComponent(callbackUrl)}`);
       return;
     }
 
-    const user_id = (session?.user as any)?.id;
-    if (!user_id) {
-      alert('Vui lòng đăng nhập để sử dụng tính năng này!');
+    if (!productFile || !personFile) {
+      alert('Vui lòng tải lên cả ảnh sản phẩm và ảnh người mẫu!');
       return;
     }
 
@@ -110,7 +117,10 @@ export default function ProductModelPage() {
       startPolling(response.data.job_id);
     } catch (error: any) {
       if (error.response?.status === 402) {
-        alert('Không đủ credits!');
+        const qs = searchParams?.toString();
+        const basePath = pathname || '/';
+        const callbackUrl = qs ? `${basePath}?${qs}` : basePath;
+        router.push(`/credits?callbackUrl=${encodeURIComponent(callbackUrl)}`);
       } else {
         alert(
           'Có lỗi xảy ra: ' + (error.response?.data?.message || error.message)
@@ -217,7 +227,7 @@ export default function ProductModelPage() {
 
               <button
                 onClick={handleGenerate}
-                disabled={isGenerating || !productFile || !personFile}
+                disabled={isGenerating}
                 className="w-full py-3.5 rounded-[16px] bg-gradient-to-r from-[#D344FF] to-[#B836E6] text-white font-semibold flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed hover:opacity-95 transition-opacity"
               >
                 {isGenerating ? (

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { useRouter } from 'next/navigation';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import { Upload, Video, Loader2, Image as ImageIcon, ChevronDown, RotateCcw, Trash2, ArrowRight } from 'lucide-react';
@@ -57,6 +57,8 @@ interface VideoJob {
 
 export default function DanceImageBgPage() {
   const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
   const { data: session } = useSession();
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [videoFile, setVideoFile] = useState<File | null>(null);
@@ -200,14 +202,17 @@ export default function DanceImageBgPage() {
   };
 
   const handleGenerate = async () => {
-    if (!imageFile || !videoFile) {
-      alert('Vui lòng tải lên cả ảnh và video!');
+    const user_id = (session?.user as any)?.id;
+    if (!user_id) {
+      const qs = searchParams?.toString();
+      const basePath = pathname || '/';
+      const callbackUrl = qs ? `${basePath}?${qs}` : basePath;
+      router.push(`/login?callbackUrl=${encodeURIComponent(callbackUrl)}`);
       return;
     }
 
-    const user_id = (session?.user as any)?.id;
-    if (!user_id) {
-      alert('Vui lòng đăng nhập để sử dụng tính năng này!');
+    if (!imageFile || !videoFile) {
+      alert('Vui lòng tải lên cả ảnh và video!');
       return;
     }
 
@@ -232,7 +237,10 @@ export default function DanceImageBgPage() {
       startPolling(response.data.job_id);
     } catch (error: any) {
       if (error.response?.status === 402) {
-        alert('Không đủ credits!');
+        const qs = searchParams?.toString();
+        const basePath = pathname || '/';
+        const callbackUrl = qs ? `${basePath}?${qs}` : basePath;
+        router.push(`/credits?callbackUrl=${encodeURIComponent(callbackUrl)}`);
       } else {
         alert('Có lỗi xảy ra: ' + (error.response?.data?.message || error.message));
       }
@@ -294,14 +302,17 @@ export default function DanceImageBgPage() {
 
   const handleRerun = async (job: VideoJob) => {
     // For dance-image-bg, we need to re-upload image and video
-    if (!imageFile || !videoFile) {
-      alert('Vui lòng tải lên lại ảnh và video để rerun!');
+    const user_id = (session?.user as any)?.id;
+    if (!user_id) {
+      const qs = searchParams?.toString();
+      const basePath = pathname || '/';
+      const callbackUrl = qs ? `${basePath}?${qs}` : basePath;
+      router.push(`/login?callbackUrl=${encodeURIComponent(callbackUrl)}`);
       return;
     }
 
-    const user_id = (session?.user as any)?.id;
-    if (!user_id) {
-      alert('Vui lòng đăng nhập!');
+    if (!imageFile || !videoFile) {
+      alert('Vui lòng tải lên lại ảnh và video để rerun!');
       return;
     }
 
@@ -326,7 +337,10 @@ export default function DanceImageBgPage() {
       startPolling(response.data.job_id);
     } catch (error: any) {
       if (error.response?.status === 402) {
-        alert('Không đủ credits!');
+        const qs = searchParams?.toString();
+        const basePath = pathname || '/';
+        const callbackUrl = qs ? `${basePath}?${qs}` : basePath;
+        router.push(`/credits?callbackUrl=${encodeURIComponent(callbackUrl)}`);
       } else {
         alert('Có lỗi xảy ra: ' + (error.response?.data?.message || error.message));
       }
@@ -532,7 +546,7 @@ export default function DanceImageBgPage() {
                 {/* Create Button */}
                 <button
                   onClick={handleGenerate}
-                  disabled={isGenerating || !imageFile || !videoFile}
+                  disabled={isGenerating}
                   className="w-full px-4 sm:px-6 py-3 sm:py-4 bg-[#D344FF] text-white rounded-[20px] hover:bg-[#B836E6] transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 overflow-hidden min-w-0"
                 >
                   {isGenerating ? (

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
+import { Suspense, useState, useRef, useEffect } from 'react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
@@ -13,7 +13,7 @@ import { VideoJob } from '@/lib/types';
 import { useFeaturePage } from '@/hooks/useFeaturePage';
 import { FILE_TYPES, FILE_SIZES } from '@/lib/constants';
 
-export default function CreateVideoPage() {
+function CreateVideoPageInner() {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -478,5 +478,13 @@ export default function CreateVideoPage() {
       </main>
       <Footer />
     </div>
+  );
+}
+
+export default function CreateVideoPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-black" />}>
+      <CreateVideoPageInner />
+    </Suspense>
   );
 }

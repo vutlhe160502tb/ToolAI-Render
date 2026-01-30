@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { Suspense, useState, useEffect, useRef } from 'react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
@@ -14,7 +14,7 @@ import { isImageUrl, formatDate, validateFile, truncateFilenameForTooltip } from
 import { VideoJob } from '@/lib/types';
 import { useDeletedJobs } from '@/hooks/useDeletedJobs';
 
-export default function CreateImagePage() {
+function CreateImagePageInner() {
   const { data: session } = useSession();
   const router = useRouter();
   const pathname = usePathname();
@@ -599,5 +599,13 @@ export default function CreateImagePage() {
       </main>
       <Footer />
     </div>
+  );
+}
+
+export default function CreateImagePage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-black" />}>
+      <CreateImagePageInner />
+    </Suspense>
   );
 }

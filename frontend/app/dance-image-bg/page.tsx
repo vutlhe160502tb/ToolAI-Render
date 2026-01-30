@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { Suspense, useState, useEffect, useRef } from 'react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
@@ -55,7 +55,7 @@ interface VideoJob {
   prompt?: string;
 }
 
-export default function DanceImageBgPage() {
+function DanceImageBgPageInner() {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -684,5 +684,13 @@ export default function DanceImageBgPage() {
       </main>
       <Footer />
     </div>
+  );
+}
+
+export default function DanceImageBgPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-black" />}>
+      <DanceImageBgPageInner />
+    </Suspense>
   );
 }

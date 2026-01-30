@@ -3,11 +3,11 @@
 import Link from 'next/link';
 import { Folder, Image, Video, Sparkles, Coins, LogOut } from 'lucide-react';
 import { useSession, signOut } from 'next-auth/react';
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { Suspense, useState, useEffect, useRef, useCallback } from 'react';
 import { usePathname, useSearchParams } from 'next/navigation';
 import axios from 'axios';
 
-export default function Header() {
+function HeaderInner() {
   const { data: session } = useSession();
   const [credits, setCredits] = useState<number | null>(null);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
@@ -279,6 +279,14 @@ export default function Header() {
         </div>
       </div>
     </header>
+  );
+}
+
+export default function Header() {
+  return (
+    <Suspense fallback={<div className="w-full bg-[#101010] h-[64px]" />}>
+      <HeaderInner />
+    </Suspense>
   );
 }
 

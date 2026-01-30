@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { Suspense, useState, useEffect } from 'react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
@@ -16,7 +16,7 @@ const CHARACTER_SWAP_COST = 0.5;
 const ALLOWED_TYPES = [...FILE_TYPES.image, ...FILE_TYPES.video];
 const MAX_SIZE = FILE_SIZES.video; // 200MB for video
 
-export default function CharacterSwapPage() {
+function CharacterSwapPageInner() {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -347,5 +347,13 @@ export default function CharacterSwapPage() {
       </main>
       <Footer />
     </div>
+  );
+}
+
+export default function CharacterSwapPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-[#0d0d0d]" />}>
+      <CharacterSwapPageInner />
+    </Suspense>
   );
 }

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { Suspense, useState, useEffect, useRef } from 'react';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import { Video, Loader2, Image as ImageIcon, RotateCcw, Trash2, Music, ChevronDown, ArrowRight } from 'lucide-react';
@@ -88,6 +88,38 @@ interface FeaturePage3ColumnProps {
 }
 
 export default function FeaturePage3Column({
+  featureType,
+  title,
+  description,
+  apiEndpoint,
+  fileInputs,
+  hasPrompt = false,
+  promptPlaceholder = 'Nhập prompt...',
+  hasQuality = false,
+  hasMode = false,
+  coinCost = 1,
+  previewMedia
+}: FeaturePage3ColumnProps) {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-black" />}>
+      <FeaturePage3ColumnInner
+        featureType={featureType}
+        title={title}
+        description={description}
+        apiEndpoint={apiEndpoint}
+        fileInputs={fileInputs}
+        hasPrompt={hasPrompt}
+        promptPlaceholder={promptPlaceholder}
+        hasQuality={hasQuality}
+        hasMode={hasMode}
+        coinCost={coinCost}
+        previewMedia={previewMedia}
+      />
+    </Suspense>
+  );
+}
+
+function FeaturePage3ColumnInner({
   featureType,
   title,
   description,

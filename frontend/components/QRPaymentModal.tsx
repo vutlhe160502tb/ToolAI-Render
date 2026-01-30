@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { Suspense, useState, useEffect, useRef, useCallback } from 'react';
 import { X, Loader2, CheckCircle, XCircle } from 'lucide-react';
 import Image from 'next/image';
 import axios from 'axios';
@@ -17,7 +17,7 @@ interface QRPaymentModalProps {
   onClose: () => void;
 }
 
-export default function QRPaymentModal({ package: pkg, onClose }: QRPaymentModalProps) {
+function QRPaymentModalInner({ package: pkg, onClose }: QRPaymentModalProps) {
   const { data: session } = useSession();
   const router = useRouter();
   const pathname = usePathname();
@@ -360,6 +360,14 @@ export default function QRPaymentModal({ package: pkg, onClose }: QRPaymentModal
         </div>
       </div>
     </div>
+  );
+}
+
+export default function QRPaymentModal(props: QRPaymentModalProps) {
+  return (
+    <Suspense fallback={null}>
+      <QRPaymentModalInner {...props} />
+    </Suspense>
   );
 }
 

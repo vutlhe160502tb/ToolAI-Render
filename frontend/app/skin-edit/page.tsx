@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { Suspense, useState, useEffect } from 'react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
@@ -16,7 +16,7 @@ const SKIN_EDIT_COST = 0.8;
 
 type SkinType = 'smooth' | 'real' | 'imperfect' | null;
 
-export default function SkinEditPage() {
+function SkinEditPageInner() {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -398,5 +398,13 @@ export default function SkinEditPage() {
       </main>
       <Footer />
     </div>
+  );
+}
+
+export default function SkinEditPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-black" />}>
+      <SkinEditPageInner />
+    </Suspense>
   );
 }

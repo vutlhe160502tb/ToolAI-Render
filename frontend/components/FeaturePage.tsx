@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { Suspense, useState } from 'react';
 import Header from '@/components/Header';
 import { Upload, Video, Image, Music, Loader2 } from 'lucide-react';
 import axios from 'axios';
@@ -27,7 +27,7 @@ interface FeatureConfig {
   promptPlaceholder?: string;
 }
 
-export default function FeaturePage({ config }: { config: FeatureConfig }) {
+function FeaturePageInner({ config }: { config: FeatureConfig }) {
   const { data: session } = useSession();
   const router = useRouter();
   const pathname = usePathname();
@@ -269,6 +269,14 @@ export default function FeaturePage({ config }: { config: FeatureConfig }) {
         </div>
       </main>
     </div>
+  );
+}
+
+export default function FeaturePage(props: { config: FeatureConfig }) {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-black" />}>
+      <FeaturePageInner {...props} />
+    </Suspense>
   );
 }
 

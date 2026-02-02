@@ -84,6 +84,12 @@ class PaymentService:
             db.add(user)
             db.commit()
             db.refresh(user)
+            try:
+                from services.referral_service import ReferralService
+
+                ReferralService.ensure_referral_code(user, db)
+            except Exception:
+                pass
         
         # Generate unique transaction_id
         transaction_id = f"TXN-{int(time.time())}-{random.randint(1000, 9999)}"
@@ -382,6 +388,17 @@ class PaymentService:
                     description=f"Payment transaction {transaction_id}",
                     db=db
                 )
+                # Referral: count this referred user only after they were credited
+                try:
+                    from services.referral_service import ReferralService
+
+                    ReferralService.on_referred_user_paid(
+                        user_id=user_id,
+                        payment_id=payment.id,
+                        db=db,
+                    )
+                except Exception as e:
+                    logger.warning(f"Referral processing failed (non-blocking): {str(e)}")
                 logger.info(f"Payment processed successfully: payment_code={payment_code or transaction_id}, credits_added={coins}")
                 return {
                     "message": "Payment processed successfully",

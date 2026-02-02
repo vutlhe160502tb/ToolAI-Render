@@ -1,4 +1,4 @@
-from sqlalchemy import Column, String, Integer, Float, DateTime, Boolean, Text, ForeignKey, Enum as SQLEnum
+from sqlalchemy import Column, String, Integer, Float, DateTime, Boolean, Text, ForeignKey, Enum as SQLEnum, UniqueConstraint
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from database import Base
@@ -35,6 +35,9 @@ class User(Base):
     google_id = Column(String, nullable=True)  # Added to match DB
     credits = Column(Float, default=0.0)
     is_admin = Column(Boolean, default=False)  # Admin flag
+    # Referral / sharing
+    referral_code = Column(String, unique=True, index=True, nullable=True)
+    referrer_id = Column(String, ForeignKey("users.id"), nullable=True, index=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
 
@@ -42,6 +45,33 @@ class User(Base):
     credit_transactions = relationship("CreditTransaction", back_populates="user")
     credit_reservations = relationship("CreditReservation", back_populates="user")
     video_jobs = relationship("VideoJob", back_populates="user")
+    # Self-referential relationships
+    referrer = relationship(
+        "User",
+        remote_side=[id],
+        back_populates="referred_users",
+        foreign_keys=[referrer_id],
+    )
+    referred_users = relationship(
+        "User",
+        back_populates="referrer",
+        foreign_keys=[referrer_id],
+    )
+    referral_conversions_as_referrer = relationship(
+        "ReferralConversion",
+        back_populates="referrer",
+        foreign_keys="ReferralConversion.referrer_user_id",
+    )
+    referral_conversions_as_referred = relationship(
+        "ReferralConversion",
+        back_populates="referred_user",
+        foreign_keys="ReferralConversion.referred_user_id",
+    )
+    referral_rewards = relationship(
+        "ReferralReward",
+        back_populates="referrer",
+        foreign_keys="ReferralReward.referrer_user_id",
+    )
 
 class Payment(Base):
     __tablename__ = "payments"
@@ -123,4 +153,51 @@ class VideoJob(Base):
 
     user = relationship("User", back_populates="video_jobs")
     reservation = relationship("CreditReservation", foreign_keys=[reservation_id])
+
+class ReferralConversion(Base):
+    """
+    One-time conversion when a referred user makes their first successful payment
+    and has been credited coins.
+    """
+    __tablename__ = "referral_conversions"
+
+    id = Column(String, primary_key=True)
+    # NOTE: DB schema uses *_user_id naming
+    referrer_user_id = Column("referrer_user_id", String, ForeignKey("users.id"), nullable=False, index=True)
+    referred_user_id = Column(String, ForeignKey("users.id"), nullable=False, index=True, unique=True)
+    first_payment_id = Column("first_payment_id", String, ForeignKey("payments.id"), nullable=True)
+    qualified_at = Column("qualified_at", DateTime(timezone=True), nullable=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+    referrer = relationship(
+        "User",
+        back_populates="referral_conversions_as_referrer",
+        foreign_keys=[referrer_user_id],
+    )
+    referred_user = relationship(
+        "User",
+        back_populates="referral_conversions_as_referred",
+        foreign_keys=[referred_user_id],
+    )
+    payment = relationship("Payment", foreign_keys=[first_payment_id])
+
+class ReferralReward(Base):
+    """
+    Tracks milestone rewards granted to a referrer to prevent double-awarding.
+    """
+    __tablename__ = "referral_rewards"
+
+    id = Column(String, primary_key=True)
+    # NOTE: DB schema uses *_user_id naming
+    referrer_user_id = Column("referrer_user_id", String, ForeignKey("users.id"), nullable=False, index=True)
+    milestone = Column(Integer, nullable=False)
+    amount = Column(Float, nullable=False)
+    awarded_at = Column(DateTime(timezone=True), nullable=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+    __table_args__ = (
+        UniqueConstraint("referrer_user_id", "milestone", name="uq_referral_rewards_referrer_milestone"),
+    )
+
+    referrer = relationship("User", back_populates="referral_rewards", foreign_keys=[referrer_user_id])
 

@@ -40,7 +40,18 @@ function CreateImagePageInner() {
   
   const progress = useProgressBar(serverProgress, isGenerating);
 
-  // Close quality dropdown when clicking outside
+  // Preview URL cho file đã chọn (chỉ hiển thị trong ô upload, không ghi đè preview kết quả)
+  useEffect(() => {
+    if (!file) {
+      setFilePreviewUrl(null);
+      return;
+    }
+    const url = URL.createObjectURL(file);
+    setFilePreviewUrl(url);
+    return () => URL.revokeObjectURL(url);
+  }, [file]);
+
+  // Close quality dropdown (desktop) when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (qualityRef.current && !qualityRef.current.contains(event.target as Node)) {
@@ -56,17 +67,6 @@ function CreateImagePageInner() {
       document.removeEventListener('mousedown', handleClickOutside);
     };
   }, [isQualityOpen]);
-
-  // Preview URL cho file đã chọn (chỉ hiển thị trong ô upload, không ghi đè preview kết quả)
-  useEffect(() => {
-    if (!file) {
-      setFilePreviewUrl(null);
-      return;
-    }
-    const url = URL.createObjectURL(file);
-    setFilePreviewUrl(url);
-    return () => URL.revokeObjectURL(url);
-  }, [file]);
 
   // Fetch jobs history
   useEffect(() => {
@@ -381,49 +381,86 @@ function CreateImagePageInner() {
                 </div>
 
                 {/* Quality Selector */}
-                <div className="mb-4 sm:mb-6 relative w-full min-w-0" ref={qualityRef}>
-                  <div 
-                    className="flex items-center justify-between bg-[#252525] rounded-[20px] px-3 sm:px-4 py-2 cursor-pointer hover:bg-[#3a3a3a] transition-all relative overflow-hidden w-full min-w-0"
-                    onClick={() => setIsQualityOpen(!isQualityOpen)}
-                  >
-                    <div className="flex flex-col min-w-0 flex-1">
-                      <label className="text-white mb-1 break-words" style={{ fontSize: 'clamp(0.625rem, 3vw, 0.875rem)' }}>Chất lượng</label>
-                      <span className="text-white font-semibold break-words" style={{ fontSize: 'clamp(0.625rem, 3vw, 0.875rem)' }}>{quality}</span>
-                    </div>
-                    <ArrowRight className="text-gray-400 shrink-0 ml-2" style={{ width: 'clamp(0.625rem, 3vw, 1rem)', height: 'clamp(0.625rem, 3vw, 1rem)' }} />
+                <div className="mb-4 sm:mb-6 w-full min-w-0">
+                  <label className="text-white mb-2 block break-words" style={{ fontSize: 'clamp(0.625rem, 3vw, 0.875rem)' }}>
+                    Chất lượng
+                  </label>
+                  {/* Mobile: pill switch */}
+                  <div className="flex gap-2 bg-[#1a1a1a] rounded-[10px] p-1 w-full min-w-0 lg:hidden">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setQuality('720P');
+                        setQualityCost(1);
+                      }}
+                      className={`flex-1 px-2 sm:px-4 py-1.5 sm:py-2 rounded-[7px] transition-all min-w-0 overflow-hidden flex flex-col items-center justify-center ${
+                        quality === '720P' ? 'bg-[#4C4C4C] text-white' : 'bg-transparent text-gray-400 hover:bg-[#3a3a3a]'
+                      }`}
+                    >
+                      <span className="font-semibold leading-tight" style={{ fontSize: 'clamp(0.75rem, 3vw, 0.875rem)' }}>720P</span>
+                      <span className="leading-tight opacity-80" style={{ fontSize: 'clamp(0.625rem, 2.5vw, 0.75rem)' }}>Tốn 1 coin</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setQuality('1080P');
+                        setQualityCost(2);
+                      }}
+                      className={`flex-1 px-2 sm:px-4 py-1.5 sm:py-2 rounded-[7px] transition-all min-w-0 overflow-hidden flex flex-col items-center justify-center ${
+                        quality === '1080P' ? 'bg-[#4C4C4C] text-white' : 'bg-transparent text-gray-400 hover:bg-[#3a3a3a]'
+                      }`}
+                    >
+                      <span className="font-semibold leading-tight" style={{ fontSize: 'clamp(0.75rem, 3vw, 0.875rem)' }}>1080P</span>
+                      <span className="leading-tight opacity-80" style={{ fontSize: 'clamp(0.625rem, 2.5vw, 0.75rem)' }}>Tốn 2 coin</span>
+                    </button>
                   </div>
-                  
-                  {/* Quality Dropdown */}
-                  {isQualityOpen && (
-                    <div className="absolute left-full top-0 ml-2 bg-[#1a1a1a] rounded-[20px] p-1.5 z-10 w-[170px]">
-                      <div
-                        onClick={() => {
-                          setQuality('720P');
-                          setQualityCost(1);
-                          setIsQualityOpen(false);
-                        }}
-                        className={`p-2 rounded-[10px] cursor-pointer transition-all mb-1.5 ${
-                          quality === '720P' ? 'bg-[#2a2a2a]' : 'bg-[#1a1a1a] hover:bg-[#2a2a2a]'
-                        }`}
-                      >
-                        <div className="text-white text-sm font-semibold mb-0.5">720P</div>
-                        <div className="text-gray-400 text-xs">Tốn 1 coin</div>
+
+                  {/* Desktop: dropdown (old behavior) */}
+                  <div className="hidden lg:block relative w-full min-w-0" ref={qualityRef}>
+                    <div
+                      className="flex items-center justify-between bg-[#252525] rounded-[20px] px-3 sm:px-4 py-2 cursor-pointer hover:bg-[#3a3a3a] transition-all relative overflow-hidden w-full min-w-0"
+                      onClick={() => setIsQualityOpen(!isQualityOpen)}
+                    >
+                      <div className="flex flex-col min-w-0 flex-1">
+                        <label className="text-white mb-1 break-words" style={{ fontSize: 'clamp(0.625rem, 3vw, 0.875rem)' }}>Chất lượng</label>
+                        <span className="text-white font-semibold break-words" style={{ fontSize: 'clamp(0.625rem, 3vw, 0.875rem)' }}>
+                          {quality}
+                        </span>
                       </div>
-                      <div
-                        onClick={() => {
-                          setQuality('1080P');
-                          setQualityCost(2);
-                          setIsQualityOpen(false);
-                        }}
-                        className={`p-2 rounded-[10px] cursor-pointer transition-all ${
-                          quality === '1080P' ? 'bg-[#2a2a2a]' : 'bg-[#1a1a1a] hover:bg-[#2a2a2a]'
-                        }`}
-                      >
-                        <div className="text-white text-sm font-semibold mb-0.5">1080P</div>
-                        <div className="text-gray-400 text-xs">Tốn 2 coin</div>
-                      </div>
+                      <ArrowRight className="text-gray-400 shrink-0 ml-2" style={{ width: 'clamp(0.625rem, 3vw, 1rem)', height: 'clamp(0.625rem, 3vw, 1rem)' }} />
                     </div>
-                  )}
+
+                    {isQualityOpen && (
+                      <div className="absolute left-full top-0 ml-2 bg-[#1a1a1a] rounded-[20px] p-1.5 z-10 w-[170px]">
+                        <div
+                          onClick={() => {
+                            setQuality('720P');
+                            setQualityCost(1);
+                            setIsQualityOpen(false);
+                          }}
+                          className={`p-2 rounded-[10px] cursor-pointer transition-all mb-1.5 ${
+                            quality === '720P' ? 'bg-[#2a2a2a]' : 'bg-[#1a1a1a] hover:bg-[#2a2a2a]'
+                          }`}
+                        >
+                          <div className="text-white text-sm font-semibold mb-0.5">720P</div>
+                          <div className="text-gray-400 text-xs">Tốn 1 coin</div>
+                        </div>
+                        <div
+                          onClick={() => {
+                            setQuality('1080P');
+                            setQualityCost(2);
+                            setIsQualityOpen(false);
+                          }}
+                          className={`p-2 rounded-[10px] cursor-pointer transition-all ${
+                            quality === '1080P' ? 'bg-[#2a2a2a]' : 'bg-[#1a1a1a] hover:bg-[#2a2a2a]'
+                          }`}
+                        >
+                          <div className="text-white text-sm font-semibold mb-0.5">1080P</div>
+                          <div className="text-gray-400 text-xs">Tốn 2 coin</div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 </div>
 
                 {/* Advanced Mode */}
@@ -494,8 +531,8 @@ function CreateImagePageInner() {
               </div>
             </div>
 
-            {/* Middle Column - Preview */}
-            <div className="lg:col-span-6 flex items-center justify-center min-h-[400px] lg:min-h-0">
+            {/* Middle Column - Preview (hide on mobile) */}
+            <div className="hidden lg:col-span-6 lg:flex items-center justify-center min-h-[400px] lg:min-h-0">
               <div className="w-full h-full bg-[#1A1A1A] rounded-[25px] flex items-center justify-center p-4 sm:p-8">
                 {(() => {
                   // Hiển thị loading khi đang generating
@@ -528,8 +565,8 @@ function CreateImagePageInner() {
               </div>
             </div>
 
-            {/* Right Column - Results/History */}
-            <div className="lg:col-span-2 flex flex-col min-h-[400px] lg:min-h-0">
+            {/* Right Column - Results/History (hide on mobile) */}
+            <div className="hidden lg:col-span-2 lg:flex flex-col min-h-[400px] lg:min-h-0">
               <div className="bg-[#131313] rounded-[20px] px-[15px] pt-[20px] pb-4 sm:pb-6 overflow-y-auto h-full flex flex-col">
                 {currentDisplayJob ? (
                   <>

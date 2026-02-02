@@ -8,7 +8,10 @@ class CreditService:
         user_id: str,
         amount: float,
         description: str,
-        db: Session
+        db: Session,
+        transaction_type: str = "PAYMENT",
+        reference_id: str | None = None,
+        commit: bool = True,
     ):
         user = db.query(User).filter(User.id == user_id).first()
         if not user:
@@ -25,14 +28,18 @@ class CreditService:
         transaction = CreditTransaction(
             id=str(uuid.uuid4()),
             user_id=user_id,
-            transaction_type="PAYMENT",  # Database enum: PAYMENT, RESERVATION, DEDUCTION, REFUND, RELEASE
+            transaction_type=transaction_type,  # Database enum: PAYMENT, RESERVATION, DEDUCTION, REFUND, RELEASE
             amount=amount,
             balance_before=balance_before,  # Required by database
             balance_after=balance_after,  # Required by database
-            description=description
+            description=description,
+            reference_id=reference_id,
         )
         db.add(transaction)
-        db.commit()
+        if commit:
+            db.commit()
+        else:
+            db.flush()
         
         return user.credits
 

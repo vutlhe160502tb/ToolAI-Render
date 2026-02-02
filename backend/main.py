@@ -3,7 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
-from api.routes import auth, videos, jobs, payments, users, telegram
+from api.routes import auth, videos, jobs, payments, users, telegram, referral
 from database import engine, Base
 import sys
 import logging
@@ -40,6 +40,7 @@ app.include_router(jobs.router, prefix="/api/jobs", tags=["jobs"])
 app.include_router(payments.router, prefix="/api/payments", tags=["payments"])
 app.include_router(users.router, prefix="/api/users", tags=["users"])
 app.include_router(telegram.router, prefix="/api/telegram", tags=["telegram"])
+app.include_router(referral.router, prefix="/api/referral", tags=["referral"])
 
 @app.get("/")
 def root():

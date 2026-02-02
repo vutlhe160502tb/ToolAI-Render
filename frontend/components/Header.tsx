@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { Folder, Image, Video, Sparkles, Coins, LogOut } from 'lucide-react';
+import { Folder, Image, Video, Sparkles, Coins, LogOut, Gift } from 'lucide-react';
 import { useSession, signOut } from 'next-auth/react';
 import { Suspense, useState, useEffect, useRef, useCallback } from 'react';
 import { usePathname, useSearchParams } from 'next/navigation';
@@ -10,6 +10,7 @@ import axios from 'axios';
 function HeaderInner() {
   const { data: session } = useSession();
   const [credits, setCredits] = useState<number | null>(null);
+  const [resolvedUserId, setResolvedUserId] = useState<string | null>(null);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const pathname = usePathname();
@@ -42,8 +43,10 @@ function HeaderInner() {
     if (!user_id) {
       console.warn('User ID not found in session, user may need to re-login');
       setCredits(0);
+      setResolvedUserId(null);
       return;
     }
+    setResolvedUserId(user_id);
     
     try {
       const response = await axios.get(`/api/users/credits?user_id=${user_id}`);
@@ -84,6 +87,58 @@ function HeaderInner() {
       fetchCredits();
     }
   }, [session, fetchCredits]);
+
+  // Capture referral code from URL (?ref=XXXX) for later attach after login
+  useEffect(() => {
+    try {
+      const ref = searchParams?.get('ref');
+      if (ref) {
+        const normalized = ref.trim().toUpperCase();
+        if (normalized) {
+          localStorage.setItem('pending_referral_code', normalized);
+        }
+      }
+    } catch {}
+  }, [searchParams]);
+
+  // Attach referral code to the logged-in user (one-time)
+  useEffect(() => {
+    if (!session) return;
+
+    let cancelled = false;
+    const run = async () => {
+      try {
+        const code = localStorage.getItem('pending_referral_code');
+        if (!code) return;
+
+        const user_id = resolvedUserId || ((session.user as any)?.id as string | undefined);
+        if (!user_id) return;
+
+        const res = await axios.post('/api/referral/attach', {
+          user_id,
+          referral_code: code,
+        });
+
+        // Clear on success or safe failures (already attached, already paid)
+        if (!cancelled) {
+          const reason = res?.data?.reason;
+          if (res.status < 500 || reason) {
+            localStorage.removeItem('pending_referral_code');
+          }
+        }
+      } catch (e: any) {
+        const status = e?.response?.status;
+        if (!cancelled && status && status < 500) {
+          localStorage.removeItem('pending_referral_code');
+        }
+      }
+    };
+
+    run();
+    return () => {
+      cancelled = true;
+    };
+  }, [session, resolvedUserId]);
 
   // Listen for credits update event
   useEffect(() => {
@@ -235,6 +290,14 @@ function HeaderInner() {
                     >
                       <Coins className="w-4 h-4" />
                       Nạp coin
+                    </Link>
+                    <Link
+                      href="/referral"
+                      onClick={() => setIsDropdownOpen(false)}
+                      className="flex items-center justify-center gap-2 w-full px-4 py-3 text-center text-white hover:bg-[#333] transition-colors text-sm font-medium border-t border-[#D344FF]/10"
+                    >
+                      <Gift className="w-4 h-4" />
+                      Giới thiệu nhận thưởng
                     </Link>
                     <Link
                       href="/dashboard"

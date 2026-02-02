@@ -79,6 +79,15 @@ async def google_auth(
     
     db.commit()
     db.refresh(user)
+
+    # Ensure user has a referral_code for sharing
+    try:
+        from services.referral_service import ReferralService
+
+        ReferralService.ensure_referral_code(user, db)
+    except Exception:
+        # Don't block login if referral code generation fails
+        pass
     
     return {
         "user_id": user.id,

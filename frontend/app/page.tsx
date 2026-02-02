@@ -105,6 +105,11 @@ export default function Home() {
     },
   ];
 
+  // Hide Google Banana Pro cards (all breakpoints)
+  const hiddenRoutes = new Set(['/models/google-banana-pro']);
+  const topChoicesVisible = topChoices.filter((f) => !hiddenRoutes.has(f.route));
+  const createImageFeaturesVisible = createImageFeatures.filter((f) => !hiddenRoutes.has(f.route));
+
   // TẠO VIDEO Section - 4 cards
   const createVideoFeatures = [
     {
@@ -162,7 +167,8 @@ export default function Home() {
         <div className="max-w-[1920px] mx-auto px-4 sm:px-8 md:px-[50px] mb-[100px]">
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
             {mainFeatures.map((feature, idx) => (
-              <a key={idx} className="block h-full" href={feature.route}>
+              <div key={idx} className="relative block h-full">
+                <a href={feature.route} className="absolute inset-0 z-10 hidden lg:block" aria-hidden="true" />
                 <div className="group rounded-[25px] p-1 sm:p-1.5 md:p-2 transition-all cursor-pointer flex flex-col bg-black border border-black">
                   <div className="w-full aspect-[450/260] bg-[#2a2a2a] rounded-[20px] mb-2 sm:mb-3 md:mb-4 flex items-center justify-center shrink-0 overflow-hidden">
                     {feature.video ? (
@@ -186,10 +192,31 @@ export default function Home() {
                       <div className="text-gray-500 text-xs sm:text-xs md:text-sm">Preview</div>
                     )}
                   </div>
-                  <h2 className="text-xs sm:text-sm md:text-base lg:text-lg font-bold text-white group-hover:bg-gradient-to-b group-hover:from-[#D344FF] group-hover:to-white/70 group-hover:bg-clip-text group-hover:text-transparent mb-[5px] transition-all truncate pl-1 sm:pl-1.5 md:pl-2">{feature.title}</h2>
-                  <p className="text-gray-400 text-xs sm:text-xs md:text-sm leading-relaxed truncate shrink pl-1 sm:pl-1.5 md:pl-2 -mt-1">{feature.description}</p>
+                  {/* Title: desktop only */}
+                  <h2 className="hidden lg:block text-xs sm:text-sm md:text-base lg:text-lg font-bold text-white group-hover:bg-gradient-to-b group-hover:from-[#D344FF] group-hover:to-white/70 group-hover:bg-clip-text group-hover:text-transparent mb-[5px] transition-all truncate pl-1 sm:pl-1.5 md:pl-2">
+                    {feature.title}
+                  </h2>
+                  {/* Description: keep on mobile, desktop keeps old */}
+                  <p className="text-gray-300 text-base text-center leading-relaxed truncate px-2 lg:text-gray-400 lg:text-xs lg:sm:text-xs lg:md:text-sm lg:text-left lg:pl-1 lg:sm:pl-1.5 lg:md:pl-2 -mt-1 lg:mb-[10px]">
+                    {feature.description}
+                  </p>
+
+                  {/* Mobile CTA - only button navigates */}
+                  <div className="flex justify-center mt-[10px] lg:hidden">
+                    <a href={feature.route} className="bg-[#D344FF] text-white rounded-[20px] px-4 py-2 text-sm font-semibold inline-block">
+                      {feature.route === '/create-image'
+                        ? 'Tạo ảnh'
+                        : feature.route === '/create-video'
+                          ? 'Tạo video'
+                          : feature.route === '/dance-image-bg'
+                            ? 'Tạo chuyển động'
+                            : feature.route === '/upscale-image'
+                              ? 'Làm nét ảnh'
+                              : 'Tạo'}
+                    </a>
+                  </div>
                 </div>
-              </a>
+              </div>
             ))}
           </div>
         </div>
@@ -201,8 +228,13 @@ export default function Home() {
             <p className="text-white text-sm md:text-base">CÁC CREATOR SÁNG TẠO TIN DÙNG</p>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
-            {topChoices.map((feature, idx) => (
-              <a key={idx} className="block h-full" href={feature.route}>
+            {topChoicesVisible.map((feature, idx) => (
+              <div key={idx} className="relative block h-full">
+                <a href={feature.route} className="absolute inset-0 z-10 hidden lg:block" aria-hidden="true" />
+                {/* Mobile title (outside card) */}
+                <h2 className="text-lg font-bold text-white text-center mb-2 lg:hidden">
+                  {feature.title}
+                </h2>
                 <div className="group rounded-[25px] p-1 sm:p-1.5 md:p-2 transition-all cursor-pointer flex flex-col bg-[#1E1E1E]">
                   <div className="w-full aspect-[450/260] bg-[#2a2a2a] rounded-[20px] mb-2 sm:mb-3 md:mb-4 flex items-center justify-center shrink-0 overflow-hidden">
                     {feature.video ? (
@@ -226,10 +258,20 @@ export default function Home() {
                       <div className="text-gray-500 text-xs sm:text-sm md:text-base">Preview</div>
                     )}
                   </div>
-                  <h2 className="text-sm sm:text-base md:text-lg lg:text-xl font-bold text-white group-hover:bg-gradient-to-b group-hover:from-[#D344FF] group-hover:to-white/70 group-hover:bg-clip-text group-hover:text-transparent mb-[5px] transition-all truncate pl-1 sm:pl-1.5 md:pl-2">{feature.title}</h2>
-                  <p className="text-gray-400 text-xs sm:text-sm md:text-base leading-relaxed truncate shrink pl-1 sm:pl-1.5 md:pl-2 -mt-1">{feature.description}</p>
+                  {/* Desktop title (keep old, hide on mobile) */}
+                  <h2 className="hidden lg:block text-sm sm:text-base md:text-lg lg:text-xl font-bold text-white group-hover:bg-gradient-to-b group-hover:from-[#D344FF] group-hover:to-white/70 group-hover:bg-clip-text group-hover:text-transparent mb-[5px] transition-all truncate pl-1 sm:pl-1.5 md:pl-2">{feature.title}</h2>
+                  <p className="text-gray-300 text-base text-center leading-relaxed truncate px-2 -mt-1 lg:text-gray-400 lg:text-xs lg:sm:text-sm lg:md:text-base lg:text-left lg:pl-1 lg:sm:pl-1.5 lg:md:pl-2">
+                    {feature.description}
+                  </p>
+
+                  {/* Mobile CTA - only button navigates */}
+                  <div className="flex justify-center mt-[7px] mb-[10px] lg:hidden">
+                    <a href={feature.route} className="bg-[#D344FF] text-white rounded-[20px] px-4 py-2 text-sm font-semibold inline-block">
+                      {feature.route.startsWith('/dance') ? 'Tạo video' : 'Tạo ảnh'}
+                    </a>
+                  </div>
                 </div>
-              </a>
+              </div>
             ))}
           </div>
         </div>
@@ -241,8 +283,11 @@ export default function Home() {
             <p className="text-white text-sm md:text-base">Khám phá các tool tạo ảnh</p>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
-            {createImageFeatures.map((feature, idx) => (
-              <a key={idx} className="block h-full" href={feature.route}>
+            {createImageFeaturesVisible.map((feature, idx) => (
+              <div key={idx} className="relative block h-full">
+                <a href={feature.route} className="absolute inset-0 z-10 hidden lg:block" aria-hidden="true" />
+                {/* Mobile title (outside card) */}
+                <h2 className="text-lg font-bold text-white text-center mb-2 lg:hidden">{feature.title}</h2>
                 <div className="group rounded-[25px] p-1 sm:p-1.5 md:p-2 transition-all cursor-pointer flex flex-col bg-[#1E1E1E]">
                   <div className="w-full aspect-[450/260] bg-[#2a2a2a] rounded-[20px] mb-2 sm:mb-3 md:mb-4 flex items-center justify-center shrink-0 overflow-hidden">
                     {feature.video ? (
@@ -266,10 +311,18 @@ export default function Home() {
                       <div className="text-gray-500 text-xs sm:text-sm md:text-base">Preview</div>
                     )}
                   </div>
-                  <h2 className="text-sm sm:text-base md:text-lg lg:text-xl font-bold text-white group-hover:bg-gradient-to-b group-hover:from-[#D344FF] group-hover:to-white/70 group-hover:bg-clip-text group-hover:text-transparent mb-[5px] transition-all truncate pl-1 sm:pl-1.5 md:pl-2">{feature.title}</h2>
-                  <p className="text-gray-400 text-xs sm:text-sm md:text-base leading-relaxed truncate shrink pl-1 sm:pl-1.5 md:pl-2 -mt-1">{feature.description}</p>
+                  {/* Desktop title (keep old, hide on mobile) */}
+                  <h2 className="hidden lg:block text-sm sm:text-base md:text-lg lg:text-xl font-bold text-white group-hover:bg-gradient-to-b group-hover:from-[#D344FF] group-hover:to-white/70 group-hover:bg-clip-text group-hover:text-transparent mb-[5px] transition-all truncate pl-1 sm:pl-1.5 md:pl-2">{feature.title}</h2>
+                  <p className="text-gray-300 text-base text-center leading-relaxed truncate px-2 -mt-1 lg:text-gray-400 lg:text-xs lg:sm:text-sm lg:md:text-base lg:text-left lg:pl-1 lg:sm:pl-1.5 lg:md:pl-2">
+                    {feature.description}
+                  </p>
+
+                  {/* Mobile CTA - only button navigates */}
+                  <div className="flex justify-center mt-[7px] mb-[10px] lg:hidden">
+                    <a href={feature.route} className="bg-[#D344FF] text-white rounded-[20px] px-4 py-2 text-sm font-semibold inline-block">Tạo ảnh</a>
+                  </div>
                 </div>
-              </a>
+              </div>
             ))}
           </div>
         </div>
@@ -282,7 +335,10 @@ export default function Home() {
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
             {createVideoFeatures.map((feature, idx) => (
-              <a key={idx} className="block h-full" href={feature.route}>
+              <div key={idx} className="relative block h-full">
+                <a href={feature.route} className="absolute inset-0 z-10 hidden lg:block" aria-hidden="true" />
+                {/* Mobile title (outside card) */}
+                <h2 className="text-lg font-bold text-white text-center mb-2 lg:hidden">{feature.title}</h2>
                 <div className="group rounded-[25px] p-1 sm:p-1.5 md:p-2 transition-all cursor-pointer flex flex-col bg-[#1E1E1E]">
                   <div className="w-full aspect-[450/260] bg-[#2a2a2a] rounded-[20px] mb-2 sm:mb-3 md:mb-4 flex items-center justify-center shrink-0 overflow-hidden">
                     {feature.video ? (
@@ -306,10 +362,18 @@ export default function Home() {
                       <div className="text-gray-500 text-xs sm:text-sm md:text-base">Preview</div>
                     )}
                   </div>
-                  <h2 className="text-sm sm:text-base md:text-lg lg:text-xl font-bold text-white group-hover:bg-gradient-to-b group-hover:from-[#D344FF] group-hover:to-white/70 group-hover:bg-clip-text group-hover:text-transparent mb-[5px] transition-all truncate pl-1 sm:pl-1.5 md:pl-2">{feature.title}</h2>
-                  <p className="text-gray-400 text-xs sm:text-sm md:text-base leading-relaxed truncate shrink pl-1 sm:pl-1.5 md:pl-2 -mt-1">{feature.description}</p>
+                  {/* Desktop title (keep old, hide on mobile) */}
+                  <h2 className="hidden lg:block text-sm sm:text-base md:text-lg lg:text-xl font-bold text-white group-hover:bg-gradient-to-b group-hover:from-[#D344FF] group-hover:to-white/70 group-hover:bg-clip-text group-hover:text-transparent mb-[5px] transition-all truncate pl-1 sm:pl-1.5 md:pl-2">{feature.title}</h2>
+                  <p className="text-gray-300 text-base text-center leading-relaxed truncate px-2 -mt-1 lg:text-gray-400 lg:text-xs lg:sm:text-sm lg:md:text-base lg:text-left lg:pl-1 lg:sm:pl-1.5 lg:md:pl-2">
+                    {feature.description}
+                  </p>
+
+                  {/* Mobile CTA - only button navigates */}
+                  <div className="flex justify-center mt-[7px] mb-[10px] lg:hidden">
+                    <a href={feature.route} className="bg-[#D344FF] text-white rounded-[20px] px-4 py-2 text-sm font-semibold inline-block">Tạo video</a>
+                  </div>
                 </div>
-              </a>
+              </div>
             ))}
           </div>
         </div>
@@ -320,9 +384,9 @@ export default function Home() {
             <h2 className="text-xl md:text-2xl lg:text-3xl font-bold text-[#D344FF] mb-2">VIDEO TỪ CỘNG ĐỒNG</h2>
             <p className="text-white text-sm md:text-base">Khám phá các video từ người dùng trên nền tảng</p>
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 mx-[100px]">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
             {communityVideos.map((video, idx) => (
-              <a key={idx} className="block" href={video.route}>
+              <a key={idx} className={`block ${idx >= 3 ? 'hidden sm:block' : ''}`} href={video.route}>
                 <div className="group rounded-[25px] p-1 sm:p-1.5 md:p-2 transition-all cursor-pointer bg-[#343434]">
                   <div className="w-full aspect-[1/1.5] bg-[#2a2a2a] rounded-[20px] flex items-center justify-center">
                     <div className="text-gray-500 text-xs sm:text-sm md:text-base">Preview</div>

@@ -29,6 +29,9 @@ export default function ReferralPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [summary, setSummary] = useState<ReferralSummary | null>(null);
+  const [referralCodeInput, setReferralCodeInput] = useState('');
+  const [attachLoading, setAttachLoading] = useState(false);
+  const [attachResult, setAttachResult] = useState<{ type: 'success' | 'error' | 'already'; message: string } | null>(null);
 
   const userId = useMemo(() => (session?.user as any)?.id as string | undefined, [session]);
 
@@ -74,8 +77,14 @@ export default function ReferralPage() {
   const progressPct =
     !nextMilestone ? 100 : Math.min(100, Math.round((referredCount / nextMilestone) * 100));
 
+  // Link luôn dùng domain hiện tại (tránh localhost khi deploy)
+  const referralLink =
+    typeof window !== 'undefined' && summary?.referral_code
+      ? `${window.location.origin}/login?ref=${encodeURIComponent(summary.referral_code)}`
+      : (summary?.referral_link as string | undefined);
+
   const handleCopy = async () => {
-    const text = summary?.referral_link as string | undefined;
+    const text = referralLink;
     if (!text) return;
     try {
       await navigator.clipboard.writeText(text);
@@ -95,7 +104,7 @@ export default function ReferralPage() {
   };
 
   const handleShare = async () => {
-    const url = summary?.referral_link as string | undefined;
+    const url = referralLink;
     if (!url) return;
     try {
       if (navigator.share) {
@@ -108,6 +117,35 @@ export default function ReferralPage() {
         await handleCopy();
       }
     } catch {}
+  };
+
+  const handleAttachReferral = async () => {
+    const code = referralCodeInput?.trim().toUpperCase();
+    if (!code || !userId) return;
+    setAttachResult(null);
+    setAttachLoading(true);
+    try {
+      const res = await axios.post('/api/referral/attach', { user_id: userId, referral_code: code });
+      const data = res?.data as { attached?: boolean; reason?: string; message?: string };
+      if (data?.attached) {
+        setAttachResult({ type: 'success', message: 'Đã gắn mã giới thiệu thành công.' });
+        setReferralCodeInput('');
+      } else if (data?.reason === 'already_attached') {
+        setAttachResult({ type: 'already', message: 'Bạn đã nhập mã giới thiệu trước đó.' });
+      } else {
+        setAttachResult({ type: 'error', message: (data?.message as string) || 'Không thể gắn mã.' });
+      }
+    } catch (e: unknown) {
+      let msg = 'Mã không hợp lệ hoặc đã sử dụng.';
+      if (axios.isAxiosError(e) && e.response?.data) {
+        const d = e.response.data as { detail?: string; message?: string };
+        if (typeof d?.detail === 'string') msg = d.detail;
+        else if (typeof d?.message === 'string') msg = d.message;
+      }
+      setAttachResult({ type: 'error', message: msg });
+    } finally {
+      setAttachLoading(false);
+    }
   };
 
   return (
@@ -158,7 +196,7 @@ export default function ReferralPage() {
                   </div>
                   <div className="flex gap-2">
                     <button
-                      disabled={!summary?.referral_link}
+                      disabled={!referralLink}
                       onClick={handleCopy}
                       className="px-4 py-2 bg-[#2E3031] text-gray-200 rounded-[12px] hover:bg-[#333] transition-colors text-sm font-medium flex items-center gap-2 disabled:opacity-50"
                     >
@@ -166,7 +204,7 @@ export default function ReferralPage() {
                       Copy link
                     </button>
                     <button
-                      disabled={!summary?.referral_link}
+                      disabled={!referralLink}
                       onClick={handleShare}
                       className="px-4 py-2 bg-[#2E3031] text-gray-200 rounded-[12px] hover:bg-[#333] transition-colors text-sm font-medium flex items-center gap-2 disabled:opacity-50"
                     >
@@ -195,8 +233,48 @@ export default function ReferralPage() {
                   <div className="text-sm text-gray-400">Mã giới thiệu</div>
                   <div className="text-white font-mono mt-1">{summary?.referral_code || '-'}</div>
                   <div className="text-sm text-gray-400 mt-3">Link giới thiệu</div>
-                  <div className="text-white break-all mt-1">{summary?.referral_link || '-'}</div>
+                  <div className="text-white break-all mt-1">{referralLink || '-'}</div>
                 </div>
+              </div>
+
+              <div className="bg-[#1A1A1A] rounded-[20px] p-6 border border-white/10">
+                <h2 className="text-white font-semibold mb-2">Bạn có mã giới thiệu?</h2>
+                <p className="text-gray-400 text-sm mb-4">
+                  Nếu bạn nhận được mã từ người khác, nhập bên dưới để gắn vào tài khoản (chỉ dùng được một lần).
+                </p>
+                <div className="flex flex-wrap items-center gap-2">
+                  <input
+                    type="text"
+                    value={referralCodeInput}
+                    onChange={(e) => {
+                      setReferralCodeInput(e.target.value.toUpperCase());
+                      setAttachResult(null);
+                    }}
+                    placeholder="VD: ABC12345"
+                    maxLength={12}
+                    className="px-4 py-2.5 bg-[#2E3031] text-white rounded-[12px] border border-white/10 focus:border-[#D344FF] focus:outline-none w-full sm:w-40 font-mono uppercase"
+                  />
+                  <button
+                    onClick={handleAttachReferral}
+                    disabled={attachLoading || !referralCodeInput?.trim()}
+                    className="px-4 py-2.5 bg-[#D344FF] text-black rounded-[12px] font-semibold hover:bg-[#B836E6] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {attachLoading ? 'Đang xử lý...' : 'Xác nhận'}
+                  </button>
+                </div>
+                {attachResult && (
+                  <p
+                    className={`mt-3 text-sm ${
+                      attachResult.type === 'success'
+                        ? 'text-green-400'
+                        : attachResult.type === 'already'
+                          ? 'text-amber-400'
+                          : 'text-red-400'
+                    }`}
+                  >
+                    {attachResult.message}
+                  </p>
+                )}
               </div>
 
               <div className="bg-[#1A1A1A] rounded-[20px] p-6 border border-white/10">

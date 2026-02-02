@@ -128,7 +128,7 @@ function CreateImagePageInner() {
       const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
       const validation = validateFile(f, allowedTypes, 50 * 1024 * 1024, 'ảnh');
       if (!validation.valid) {
-        showToast(validation.error, 'error');
+        showToast(validation.error ?? 'Lỗi validation', 'error');
         return;
       }
       setFile(f);

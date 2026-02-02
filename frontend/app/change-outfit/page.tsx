@@ -67,7 +67,7 @@ function ChangeOutfitPageInner() {
       const file = e.target.files[0];
       const validation = validateFile(file, [...FILE_TYPES.image], FILE_SIZES.image, 'ảnh');
       if (!validation.valid) {
-        showToast(validation.error, 'error');
+        showToast(validation.error ?? 'Lỗi validation', 'error');
         return;
       }
       setImageFile(file);
@@ -79,7 +79,7 @@ function ChangeOutfitPageInner() {
       const file = e.target.files[0];
       const validation = validateFile(file, [...FILE_TYPES.image], FILE_SIZES.image, 'ảnh');
       if (!validation.valid) {
-        showToast(validation.error, 'error');
+        showToast(validation.error ?? 'Lỗi validation', 'error');
         return;
       }
       setOutfitFile(file);

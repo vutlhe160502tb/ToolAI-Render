@@ -83,7 +83,7 @@ function CreateVideoPageInner() {
       const allowedTypes = [...FILE_TYPES.image, ...FILE_TYPES.video];
       const validation = validateFile(f, allowedTypes, FILE_SIZES.video, 'file');
       if (!validation.valid) {
-        showToast(validation.error, 'error');
+        showToast(validation.error ?? 'Lỗi validation', 'error');
         return;
       }
       setFile(f);

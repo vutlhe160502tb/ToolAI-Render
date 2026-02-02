@@ -13,9 +13,11 @@ import VideoDurationInfo from '@/components/VideoDurationInfo';
 import { isImageUrl, formatDate, validateFile, truncateFilenameForTooltip } from '@/lib/utils';
 import { VideoJob } from '@/lib/types';
 import { useDeletedJobs } from '@/hooks/useDeletedJobs';
+import { useToast } from '@/contexts/ToastContext';
 
 function CreateImagePageInner() {
   const { data: session } = useSession();
+  const { showToast } = useToast();
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -126,7 +128,7 @@ function CreateImagePageInner() {
       const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
       const validation = validateFile(f, allowedTypes, 50 * 1024 * 1024, 'ảnh');
       if (!validation.valid) {
-        alert(validation.error);
+        showToast(validation.error, 'error');
         return;
       }
       setFile(f);
@@ -144,7 +146,7 @@ function CreateImagePageInner() {
     }
 
     if (!file) {
-      alert('Vui lòng chọn file ảnh!');
+      showToast('Vui lòng chọn file ảnh!', 'error');
       return;
     }
 
@@ -174,7 +176,7 @@ function CreateImagePageInner() {
         const callbackUrl = qs ? `${basePath}?${qs}` : basePath;
         router.push(`/credits?callbackUrl=${encodeURIComponent(callbackUrl)}`);
       } else {
-        alert('Có lỗi xảy ra: ' + (error.response?.data?.message || error.message));
+        showToast('Có lỗi xảy ra: ' + (error.response?.data?.message || error.message), 'error');
       }
       setIsGenerating(false);
     }
@@ -212,7 +214,7 @@ function CreateImagePageInner() {
         } else if (status === 'failed') {
           clearInterval(interval);
           setIsGenerating(false);
-          alert('Tạo ảnh thất bại!');
+          showToast('Tạo ảnh thất bại!', 'error');
         }
       } catch (error: any) {
         if (error?.response?.status === 404) {
@@ -227,7 +229,7 @@ function CreateImagePageInner() {
 
   const handleRerun = async (job: VideoJob) => {
     if (!job.input_file_url && !job.prompt) {
-      alert('Không thể rerun job này vì thiếu thông tin input!');
+      showToast('Không thể rerun job này vì thiếu thông tin input!', 'error');
       return;
     }
 
@@ -280,7 +282,7 @@ function CreateImagePageInner() {
         const callbackUrl = qs ? `${basePath}?${qs}` : basePath;
         router.push(`/credits?callbackUrl=${encodeURIComponent(callbackUrl)}`);
       } else {
-        alert('Có lỗi xảy ra: ' + (error.response?.data?.message || error.message));
+        showToast('Có lỗi xảy ra: ' + (error.response?.data?.message || error.message), 'error');
       }
       setIsGenerating(false);
     }
@@ -305,7 +307,7 @@ function CreateImagePageInner() {
       }
     } catch (error) {
       console.error('Error deleting job:', error);
-      alert('Không thể xóa job!');
+      showToast('Không thể xóa job!', 'error');
     }
   };
 

@@ -9,6 +9,7 @@ import axios from 'axios';
 import { useSession } from 'next-auth/react';
 import { useProgressBar } from '@/hooks/useProgressBar';
 import LoadingPreview from '@/components/LoadingPreview';
+import { useToast } from '@/contexts/ToastContext';
 
 // Component to display video duration
 function VideoDurationInfo({ url }: { url: string }) {
@@ -60,6 +61,7 @@ function DanceImageBgPageInner() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const { data: session } = useSession();
+  const { showToast } = useToast();
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [videoFile, setVideoFile] = useState<File | null>(null);
   const [mode, setMode] = useState<'video' | 'image'>('video');
@@ -170,12 +172,12 @@ function DanceImageBgPageInner() {
       const file = e.target.files[0];
       const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
       if (!allowedTypes.includes(file.type)) {
-        alert('Chỉ chấp nhận file ảnh: JPEG, PNG, WebP');
+        showToast('Chỉ chấp nhận file ảnh: JPEG, PNG, WebP', 'error');
         return;
       }
       const MAX_SIZE = 50 * 1024 * 1024;
       if (file.size > MAX_SIZE) {
-        alert('Kích thước ảnh không được vượt quá 50MB');
+        showToast('Kích thước ảnh không được vượt quá 50MB', 'error');
         return;
       }
       setImageFile(file);
@@ -189,12 +191,12 @@ function DanceImageBgPageInner() {
       const file = e.target.files[0];
       const allowedTypes = ['video/mp4', 'video/quicktime', 'video/x-msvideo'];
       if (!allowedTypes.includes(file.type)) {
-        alert('Chỉ chấp nhận file video: MP4, MOV, AVI');
+        showToast('Chỉ chấp nhận file video: MP4, MOV, AVI', 'error');
         return;
       }
       const MAX_SIZE = 200 * 1024 * 1024;
       if (file.size > MAX_SIZE) {
-        alert('Kích thước video không được vượt quá 200MB');
+        showToast('Kích thước video không được vượt quá 200MB', 'error');
         return;
       }
       setVideoFile(file);
@@ -212,7 +214,7 @@ function DanceImageBgPageInner() {
     }
 
     if (!imageFile || !videoFile) {
-      alert('Vui lòng tải lên cả ảnh và video!');
+      showToast('Vui lòng tải lên cả ảnh và video!', 'error');
       return;
     }
 
@@ -242,7 +244,7 @@ function DanceImageBgPageInner() {
         const callbackUrl = qs ? `${basePath}?${qs}` : basePath;
         router.push(`/credits?callbackUrl=${encodeURIComponent(callbackUrl)}`);
       } else {
-        alert('Có lỗi xảy ra: ' + (error.response?.data?.message || error.message));
+        showToast('Có lỗi xảy ra: ' + (error.response?.data?.message || error.message), 'error');
       }
       setIsGenerating(false);
     }
@@ -278,7 +280,7 @@ function DanceImageBgPageInner() {
         } else if (status === 'failed') {
           clearInterval(interval);
           setIsGenerating(false);
-          alert('Tạo video thất bại!');
+          showToast('Tạo video thất bại!', 'error');
         }
       } catch (error: any) {
         if (error?.response?.status === 404) {
@@ -312,7 +314,7 @@ function DanceImageBgPageInner() {
     }
 
     if (!imageFile || !videoFile) {
-      alert('Vui lòng tải lên lại ảnh và video để rerun!');
+      showToast('Vui lòng tải lên lại ảnh và video để rerun!', 'error');
       return;
     }
 
@@ -342,7 +344,7 @@ function DanceImageBgPageInner() {
         const callbackUrl = qs ? `${basePath}?${qs}` : basePath;
         router.push(`/credits?callbackUrl=${encodeURIComponent(callbackUrl)}`);
       } else {
-        alert('Có lỗi xảy ra: ' + (error.response?.data?.message || error.message));
+        showToast('Có lỗi xảy ra: ' + (error.response?.data?.message || error.message), 'error');
       }
       setIsGenerating(false);
     }
@@ -367,7 +369,7 @@ function DanceImageBgPageInner() {
       }
     } catch (error) {
       console.error('Error deleting job:', error);
-      alert('Không thể xóa job!');
+      showToast('Không thể xóa job!', 'error');
     }
   };
 

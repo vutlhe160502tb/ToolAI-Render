@@ -10,10 +10,12 @@ import LoadingPreview from '@/components/LoadingPreview';
 import { isImageUrl, validateFile } from '@/lib/utils';
 import { useFeaturePage } from '@/hooks/useFeaturePage';
 import { FILE_TYPES, FILE_SIZES } from '@/lib/constants';
+import { useToast } from '@/contexts/ToastContext';
 
 const FACE_SWAP_COST = 0.5;
 
 function FaceSwapPageInner() {
+  const { showToast } = useToast();
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -64,7 +66,7 @@ function FaceSwapPageInner() {
       const file = e.target.files[0];
       const validation = validateFile(file, [...FILE_TYPES.image], FILE_SIZES.image, 'ảnh');
       if (!validation.valid) {
-        alert(validation.error);
+        showToast(validation.error, 'error');
         return;
       }
       setSourceFile(file);
@@ -76,7 +78,7 @@ function FaceSwapPageInner() {
       const file = e.target.files[0];
       const validation = validateFile(file, [...FILE_TYPES.image], FILE_SIZES.image, 'ảnh');
       if (!validation.valid) {
-        alert(validation.error);
+        showToast(validation.error, 'error');
         return;
       }
       setTargetFile(file);
@@ -94,7 +96,7 @@ function FaceSwapPageInner() {
     }
 
     if (!sourceFile || !targetFile) {
-      alert('Vui lòng tải lên cả ảnh nguồn và ảnh đích!');
+      showToast('Vui lòng tải lên cả ảnh nguồn và ảnh đích!', 'error');
       return;
     }
 
@@ -123,8 +125,9 @@ function FaceSwapPageInner() {
         const callbackUrl = qs ? `${basePath}?${qs}` : basePath;
         router.push(`/credits?callbackUrl=${encodeURIComponent(callbackUrl)}`);
       } else {
-        alert(
-          'Có lỗi xảy ra: ' + (error.response?.data?.message || error.message)
+        showToast(
+          'Có lỗi xảy ra: ' + (error.response?.data?.message || error.message),
+          'error'
         );
       }
       setIsGenerating(false);

@@ -6,6 +6,7 @@ import { Copy, Gift, Share2, Users } from 'lucide-react';
 import axios from 'axios';
 import { useSession, signIn } from 'next-auth/react';
 import { useEffect, useMemo, useState } from 'react';
+import { useToast } from '@/contexts/ToastContext';
 
 type ReferralMilestone = {
   milestone: number;
@@ -34,6 +35,7 @@ export default function ReferralPage() {
   const [attachResult, setAttachResult] = useState<{ type: 'success' | 'error' | 'already'; message: string } | null>(null);
 
   const userId = useMemo(() => (session?.user as any)?.id as string | undefined, [session]);
+  const { showToast } = useToast();
 
   const fetchSummary = async () => {
     if (!userId) return;
@@ -88,7 +90,7 @@ export default function ReferralPage() {
     if (!text) return;
     try {
       await navigator.clipboard.writeText(text);
-      alert('Đã copy link giới thiệu');
+      showToast('Đã copy link giới thiệu', 'success');
     } catch {
       try {
         // Fallback
@@ -98,7 +100,7 @@ export default function ReferralPage() {
         el.select();
         document.execCommand('copy');
         document.body.removeChild(el);
-        alert('Đã copy link giới thiệu');
+        showToast('Đã copy link giới thiệu', 'success');
       } catch {}
     }
   };
@@ -190,7 +192,7 @@ export default function ReferralPage() {
                       <span className="text-sm">Bạn bè đã thanh toán & nhận coin</span>
                     </div>
                     <div className="text-4xl font-bold text-white mt-2">{referredCount}</div>
-                    <p className="text-gray-400 text-sm mt-2">
+                    <p className="text-gray-400 text-sm mt-2 max-md:hidden">
                       Chỉ tính khi người được mời <b>thanh toán thành công</b> và đã được <b>cộng coin</b>.
                     </p>
                   </div>
@@ -279,22 +281,22 @@ export default function ReferralPage() {
 
               <div className="bg-[#1A1A1A] rounded-[20px] p-6 border border-white/10">
                 <h2 className="text-white font-semibold mb-4">Mốc thưởng</h2>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="grid grid-cols-3 gap-2 md:gap-4">
                   {(summary?.milestones || []).map((m: ReferralMilestone) => {
                     const reached = !!m?.reached;
                     const granted = !!m?.granted;
                     return (
                       <div
                         key={m.milestone}
-                        className={`rounded-[16px] p-4 border ${
+                        className={`rounded-[12px] md:rounded-[16px] p-2 md:p-4 border ${
                           reached ? 'border-[#D344FF]/60 bg-[#272727]' : 'border-white/10 bg-[#111]'
                         }`}
                       >
-                        <div className="text-gray-300 text-sm">Mời {m.milestone} người</div>
-                        <div className="text-white text-2xl font-bold mt-1">
+                        <div className="text-gray-300 text-xs md:text-sm">Mời {m.milestone} người</div>
+                        <div className="text-white text-lg md:text-2xl font-bold mt-0.5 md:mt-1">
                           +{m.reward_coins} coin
                         </div>
-                        <div className="text-xs mt-2">
+                        <div className="text-[10px] md:text-xs mt-1 md:mt-2">
                           {granted ? (
                             <span className="text-green-400">Đã cộng thưởng</span>
                           ) : reached ? (

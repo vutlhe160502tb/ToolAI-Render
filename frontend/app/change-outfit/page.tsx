@@ -10,10 +10,12 @@ import LoadingPreview from '@/components/LoadingPreview';
 import { isImageUrl, validateFile } from '@/lib/utils';
 import { useFeaturePage } from '@/hooks/useFeaturePage';
 import { FILE_TYPES, FILE_SIZES } from '@/lib/constants';
+import { useToast } from '@/contexts/ToastContext';
 
 const CHANGE_OUTFIT_COST = 0.5;
 
 function ChangeOutfitPageInner() {
+  const { showToast } = useToast();
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -65,7 +67,7 @@ function ChangeOutfitPageInner() {
       const file = e.target.files[0];
       const validation = validateFile(file, [...FILE_TYPES.image], FILE_SIZES.image, 'ảnh');
       if (!validation.valid) {
-        alert(validation.error);
+        showToast(validation.error, 'error');
         return;
       }
       setImageFile(file);
@@ -77,7 +79,7 @@ function ChangeOutfitPageInner() {
       const file = e.target.files[0];
       const validation = validateFile(file, [...FILE_TYPES.image], FILE_SIZES.image, 'ảnh');
       if (!validation.valid) {
-        alert(validation.error);
+        showToast(validation.error, 'error');
         return;
       }
       setOutfitFile(file);

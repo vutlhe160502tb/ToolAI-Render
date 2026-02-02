@@ -160,7 +160,7 @@ function QRPaymentModalInner({ package: pkg, onClose }: QRPaymentModalProps) {
     // Validate package data
     if (!pkg || !pkg.id || !pkg.price || !pkg.coins) {
       console.error('Invalid package data:', pkg);
-      alert('Dữ liệu gói thanh toán không hợp lệ');
+      showToast('Dữ liệu gói thanh toán không hợp lệ', 'error');
       setPaymentStatus('failed');
       return;
     }
@@ -204,7 +204,7 @@ function QRPaymentModalInner({ package: pkg, onClose }: QRPaymentModalProps) {
     } catch (error: any) {
       console.error('Error creating payment order:', error);
       const errorMessage = error.response?.data?.detail || error.response?.data?.message || error.message;
-      alert('Lỗi tạo đơn thanh toán: ' + errorMessage);
+      showToast('Lỗi tạo đơn thanh toán: ' + errorMessage, 'error');
       setPaymentStatus('failed');
       // Reset orderCreatedRef on error so user can retry
       orderCreatedRef.current = false;

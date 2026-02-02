@@ -6,6 +6,7 @@ import { LayoutDashboard, Search, Sparkles, Clock, Settings, CheckCircle, XCircl
 import axios from 'axios';
 import Link from 'next/link';
 import { useSession } from 'next-auth/react';
+import { useToast } from '@/contexts/ToastContext';
 
 type JobStatus = 'all' | 'pending' | 'processing' | 'completed' | 'failed';
 
@@ -21,6 +22,7 @@ interface VideoJob {
 
 export default function DashboardPage() {
   const { data: session } = useSession();
+  const { showToast } = useToast();
   const [searchQuery, setSearchQuery] = useState('');
   const [activeFilter, setActiveFilter] = useState<JobStatus | 'favorite'>('all');
   const [jobs, setJobs] = useState<VideoJob[]>([]);
@@ -248,7 +250,7 @@ export default function DashboardPage() {
       console.error('Delete jobs error:', err);
       // Nếu xóa thất bại thì load lại danh sách
       await fetchJobs(true);
-      alert(err.response?.data?.message || 'Không thể xóa. Thử lại sau.');
+      showToast(err.response?.data?.message || 'Không thể xóa. Thử lại sau.', 'error');
     }
   };
 

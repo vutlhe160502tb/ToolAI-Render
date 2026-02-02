@@ -10,6 +10,7 @@ import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useProgressBar } from '@/hooks/useProgressBar';
 import LoadingPreview from '@/components/LoadingPreview';
 import { truncateFilenameForTooltip } from '@/lib/utils';
+import { useToast } from '@/contexts/ToastContext';
 
 // Component to display video duration
 function VideoDurationInfo({ url }: { url: string }) {
@@ -133,6 +134,7 @@ function FeaturePage3ColumnInner({
   previewMedia
 }: FeaturePage3ColumnProps) {
   const { data: session } = useSession();
+  const { showToast } = useToast();
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -269,13 +271,13 @@ function FeaturePage3ColumnInner({
       if (!inputConfig) return;
       
       if (!inputConfig.allowedTypes.includes(file.type)) {
-        alert(`Chỉ chấp nhận: ${inputConfig.accept}`);
+        showToast(`Chỉ chấp nhận: ${inputConfig.accept}`, 'error');
         return;
       }
       
       const MAX_SIZE = inputConfig.maxSize * 1024 * 1024;
       if (file.size > MAX_SIZE) {
-        alert(`Kích thước file không được vượt quá ${inputConfig.maxSize}MB`);
+        showToast(`Kích thước file không được vượt quá ${inputConfig.maxSize}MB`, 'error');
         return;
       }
       
@@ -296,7 +298,7 @@ function FeaturePage3ColumnInner({
     // Check all required files
     const missingFiles = fileInputs.filter(inp => !files[inp.name]);
     if (missingFiles.length > 0) {
-      alert(`Vui lòng tải lên: ${missingFiles.map(f => f.label).join(', ')}`);
+      showToast(`Vui lòng tải lên: ${missingFiles.map(f => f.label).join(', ')}`, 'error');
       return;
     }
 
@@ -342,7 +344,7 @@ function FeaturePage3ColumnInner({
         const callbackUrl = qs ? `${basePath}?${qs}` : basePath;
         router.push(`/credits?callbackUrl=${encodeURIComponent(callbackUrl)}`);
       } else {
-        alert('Có lỗi xảy ra: ' + (error.response?.data?.message || error.message));
+        showToast('Có lỗi xảy ra: ' + (error.response?.data?.message || error.message), 'error');
       }
       setIsGenerating(false);
     }
@@ -377,7 +379,7 @@ function FeaturePage3ColumnInner({
         } else if (status === 'failed') {
           clearInterval(interval);
           setIsGenerating(false);
-          alert('Tạo thất bại!');
+          showToast('Tạo thất bại!', 'error');
         }
       } catch (error: any) {
         if (error?.response?.status === 404) {
@@ -403,7 +405,7 @@ function FeaturePage3ColumnInner({
     // Check if all required files are still available
     const missingFiles = fileInputs.filter(inp => !files[inp.name]);
     if (missingFiles.length > 0) {
-      alert(`Vui lòng tải lên lại: ${missingFiles.map(f => f.label).join(', ')} để rerun!`);
+      showToast(`Vui lòng tải lên lại: ${missingFiles.map(f => f.label).join(', ')} để rerun!`, 'error');
       return;
     }
 
@@ -456,7 +458,7 @@ function FeaturePage3ColumnInner({
         const callbackUrl = qs ? `${basePath}?${qs}` : basePath;
         router.push(`/credits?callbackUrl=${encodeURIComponent(callbackUrl)}`);
       } else {
-        alert('Có lỗi xảy ra: ' + (error.response?.data?.message || error.message));
+        showToast('Có lỗi xảy ra: ' + (error.response?.data?.message || error.message), 'error');
       }
       setIsGenerating(false);
     }
@@ -476,7 +478,7 @@ function FeaturePage3ColumnInner({
       }
     } catch (error) {
       console.error('Error deleting job:', error);
-      alert('Không thể xóa job!');
+      showToast('Không thể xóa job!', 'error');
     }
   };
 

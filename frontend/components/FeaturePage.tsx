@@ -7,6 +7,7 @@ import axios from 'axios';
 import { useSession } from 'next-auth/react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useProgressBar } from '@/hooks/useProgressBar';
+import { useToast } from '@/contexts/ToastContext';
 
 interface FileInput {
   name: string;
@@ -29,6 +30,7 @@ interface FeatureConfig {
 
 function FeaturePageInner({ config }: { config: FeatureConfig }) {
   const { data: session } = useSession();
+  const { showToast } = useToast();
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -49,13 +51,13 @@ function FeaturePageInner({ config }: { config: FeatureConfig }) {
       if (!inputConfig) return;
       
       if (!inputConfig.allowedTypes.includes(file.type)) {
-        alert(`Chỉ chấp nhận: ${inputConfig.accept}`);
+        showToast(`Chỉ chấp nhận: ${inputConfig.accept}`, 'error');
         return;
       }
       
       const MAX_SIZE = inputConfig.maxSize * 1024 * 1024;
       if (file.size > MAX_SIZE) {
-        alert(`Kích thước file không được vượt quá ${inputConfig.maxSize}MB`);
+        showToast(`Kích thước file không được vượt quá ${inputConfig.maxSize}MB`, 'error');
         return;
       }
       
@@ -76,7 +78,7 @@ function FeaturePageInner({ config }: { config: FeatureConfig }) {
     // Check all required files
     const missingFiles = config.fileInputs.filter(inp => !files[inp.name]);
     if (missingFiles.length > 0) {
-      alert(`Vui lòng tải lên: ${missingFiles.map(f => f.label).join(', ')}`);
+      showToast(`Vui lòng tải lên: ${missingFiles.map(f => f.label).join(', ')}`, 'error');
       return;
     }
 
@@ -111,7 +113,7 @@ function FeaturePageInner({ config }: { config: FeatureConfig }) {
         const callbackUrl = qs ? `${basePath}?${qs}` : basePath;
         router.push(`/credits?callbackUrl=${encodeURIComponent(callbackUrl)}`);
       } else {
-        alert('Có lỗi xảy ra: ' + (error.response?.data?.message || error.message));
+        showToast('Có lỗi xảy ra: ' + (error.response?.data?.message || error.message), 'error');
       }
       setIsGenerating(false);
     }
@@ -134,7 +136,7 @@ function FeaturePageInner({ config }: { config: FeatureConfig }) {
         } else if (status === 'failed') {
           clearInterval(interval);
           setIsGenerating(false);
-          alert('Thất bại!');
+          showToast('Thất bại!', 'error');
         }
       } catch (error: any) {
         if (error?.response?.status === 404) {

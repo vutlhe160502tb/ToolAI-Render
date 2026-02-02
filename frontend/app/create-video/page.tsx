@@ -12,8 +12,10 @@ import { isImageUrl, formatDate, validateFile, truncateFilenameForTooltip } from
 import { VideoJob } from '@/lib/types';
 import { useFeaturePage } from '@/hooks/useFeaturePage';
 import { FILE_TYPES, FILE_SIZES } from '@/lib/constants';
+import { useToast } from '@/contexts/ToastContext';
 
 function CreateVideoPageInner() {
+  const { showToast } = useToast();
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -81,7 +83,7 @@ function CreateVideoPageInner() {
       const allowedTypes = [...FILE_TYPES.image, ...FILE_TYPES.video];
       const validation = validateFile(f, allowedTypes, FILE_SIZES.video, 'file');
       if (!validation.valid) {
-        alert(validation.error);
+        showToast(validation.error, 'error');
         return;
       }
       setFile(f);
@@ -124,7 +126,7 @@ function CreateVideoPageInner() {
         const callbackUrl = qs ? `${basePath}?${qs}` : basePath;
         router.push(`/credits?callbackUrl=${encodeURIComponent(callbackUrl)}`);
       } else {
-        alert('Có lỗi xảy ra: ' + (error.response?.data?.message || error.message));
+        showToast('Có lỗi xảy ra: ' + (error.response?.data?.message || error.message), 'error');
       }
       setIsGenerating(false);
     }
@@ -138,7 +140,7 @@ function CreateVideoPageInner() {
 
   const handleRerun = async (job: VideoJob) => {
     if (!job.input_file_url && !job.prompt) {
-      alert('Không thể rerun job này vì thiếu thông tin input!');
+      showToast('Không thể rerun job này vì thiếu thông tin input!', 'error');
       return;
     }
 
@@ -190,7 +192,7 @@ function CreateVideoPageInner() {
         const callbackUrl = qs ? `${basePath}?${qs}` : basePath;
         router.push(`/credits?callbackUrl=${encodeURIComponent(callbackUrl)}`);
       } else {
-        alert('Có lỗi xảy ra: ' + (error.response?.data?.message || error.message));
+        showToast('Có lỗi xảy ra: ' + (error.response?.data?.message || error.message), 'error');
       }
       setIsGenerating(false);
     }

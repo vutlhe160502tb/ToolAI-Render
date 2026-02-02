@@ -312,9 +312,17 @@ export default function VideosPage() {
                                       }}
                                     />
                                   ) : isVideo ? (
-                                    <div className="w-full h-full flex items-center justify-center bg-gray-800">
-                                      <VideoIcon className="w-12 h-12 text-gray-400" />
-                                    </div>
+                                    <video
+                                      src={previewUrl}
+                                      muted
+                                      loop
+                                      playsInline
+                                      preload="metadata"
+                                      className="w-full h-full object-cover"
+                                      onError={(e) => {
+                                        (e.target as HTMLVideoElement).style.display = 'none';
+                                      }}
+                                    />
                                   ) : (
                                     <div className="w-full h-full flex items-center justify-center">
                                       <VideoIcon className="w-12 h-12 text-gray-600" />
@@ -445,9 +453,14 @@ export default function VideosPage() {
                 onClick={(e) => e.stopPropagation()}
               />
             ) : isVideoUrl(viewingImage) ? (
-              <div className="max-w-full max-h-[90vh] flex items-center justify-center bg-gray-800 rounded-lg p-8">
-                <span className="text-gray-400 text-lg">Video preview removed</span>
-              </div>
+              <video
+                src={viewingImage}
+                controls
+                autoPlay
+                playsInline
+                className="max-w-full max-h-[90vh] object-contain rounded-lg"
+                onClick={(e) => e.stopPropagation()}
+              />
             ) : (
               <div className="max-w-full max-h-[90vh] flex items-center justify-center">
                 <a

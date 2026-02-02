@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import './globals.css';
 import { SessionProvider } from '@/components/SessionProvider';
+import { Header } from '@/components/Header';
 
 export const metadata: Metadata = {
   title: 'RenderTool',
@@ -15,7 +16,10 @@ export default function RootLayout({
   return (
     <html lang="vi">
       <body>
-        <SessionProvider>{children}</SessionProvider>
+        <SessionProvider>
+          <Header />
+          {children}
+        </SessionProvider>
       </body>
     </html>
   );

@@ -4,7 +4,7 @@ from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
 
-from api.routes import auth
+from api.routes import auth, upload, users
 from database import engine, Base
 
 # Create tables
@@ -28,6 +28,8 @@ app.add_middleware(
 )
 
 app.include_router(auth.router, prefix="/api/auth", tags=["auth"])
+app.include_router(upload.router, prefix="/api/upload", tags=["upload"])
+app.include_router(users.router, prefix="/api/users", tags=["users"])
 
 @app.get("/health")
 def health():

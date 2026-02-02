@@ -1,2 +1,2 @@
-from . import auth, upload, users
+from . import auth, upload, users, payments
 

@@ -10,6 +10,7 @@ export async function POST(request: NextRequest) {
       body: JSON.stringify(body),
     });
     const data = await res.json().catch(() => ({}));
+    if (!res.ok) console.error('[Register] Backend:', res.status, data);
     return NextResponse.json(data, { status: res.status });
   } catch (e: unknown) {
     const err = e as { cause?: { code?: string } };

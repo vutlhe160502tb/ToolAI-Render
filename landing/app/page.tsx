@@ -1,675 +1,411 @@
-import React from "react";
-import { Vortex } from "@/components/ui/vortex";
-import { BackgroundBeamsWithCollision } from "@/components/ui/background-beams-with-collision";
+import Link from "next/link";
+import Image from "next/image";
 import {
-  Play,
-  Image as ImageIcon,
-  Wand2,
-  Zap,
+  Sparkles,
   ChevronRight,
-  Star,
-  Aperture,
-  Film,
-  Layers,
-  ArrowRight,
+  CircleCheckBig,
+  Video,
+  MousePointer2,
+  Cpu,
+  TrendingUp,
+  CircleHelp,
+  ShieldCheck,
+  Phone,
+  MessageCircle,
 } from "lucide-react";
+import { FloatingContact } from "@/components/FloatingContact";
+import { FeatureCard } from "@/components/FeatureCard";
+import { FAQItem } from "@/components/FAQItem";
 
-export default function App() {
+const APP_URL = "https://phuthuyai.xyz/";
+
+const faqs = [
+  {
+    question: "Tôi không biết gì về AI, không rành kỹ thuật có dùng được không?",
+    answer:
+      "Hoàn toàn được! Phù Thủy AI thiết kế riêng cho anh em 'no-tech'. Bạn không cần cài đặt, không cần viết code hay prompt dài dòng. Chỉ cần chọn mẫu, up ảnh và nhấn nút, mọi thứ còn lại AI và các Prompt Engineer của chúng tôi lo.",
+  },
+  {
+    question: "Máy tính yếu hoặc dùng điện thoại có tạo được video không?",
+    answer:
+      "Có! Mọi quá trình xử lý nặng nhất đều diễn ra trên hệ thống máy chủ GPU khủng của Phù Thủy AI. Bạn chỉ cần một thiết bị có trình duyệt web và kết nối internet là có thể tạo video 4K mượt mà.",
+  },
+  {
+    question: "Video tạo ra có bị dính bản quyền không?",
+    answer:
+      "Nội dung bạn tạo ra là duy nhất và bạn có toàn quyền sử dụng cho mục đích cá nhân hoặc thương mại (chạy quảng cáo, làm TikTok, YouTube...) mà không lo về vấn đề bản quyền hình ảnh.",
+  },
+  {
+    question: "Tại sao nên dùng Phù Thủy AI thay vì các tool quốc tế?",
+    answer:
+      "Chúng tôi tối ưu riêng cho người dùng Việt Nam: Thanh toán dễ dàng, giá rẻ hơn nhiều so với thuê GPU nước ngoài ($20-50/tháng), và quan trọng nhất là các Model đã được tinh chỉnh (Fine-tuned) sẵn để bắt đúng trend Việt Nam.",
+  },
+  {
+    question: "Làm sao để biết khi nào có trend mới?",
+    answer:
+      "Chúng tôi có đội ngũ săn trend 24/7. Khi có bất kỳ trend AI nào mới hot trên toàn cầu (như Kling AI, Sora mới...), hệ thống sẽ cập nhật model và thông báo ngay tại trang chủ để anh em 'vã' luôn.",
+  },
+];
+
+export default function LandingPage() {
   return (
-    <div className="min-h-screen bg-black text-white font-sans selection:bg-fuchsia-500 selection:text-white overflow-x-hidden">
-      {/* --- HERO SECTION --- */}
-      <section className="relative overflow-hidden">
-        <Vortex
-          backgroundColor="black"
-          rangeY={800}
-          particleCount={500}
-          baseHue={280}
-          className="pt-24 pb-20 md:pt-32 md:pb-32 px-6"
-        >
-          <div className="container mx-auto text-center max-w-4xl">
-          <div className="flex items-center justify-center gap-4 mb-6">
-            <div className="w-16 h-16 bg-gradient-to-br from-fuchsia-500 to-purple-600 rounded-xl flex items-center justify-center">
-              <Wand2 className="text-white w-10 h-10" />
-            </div>
-            <span className="text-4xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-white via-fuchsia-200 to-fuchsia-400">
-              Surreal.AI
+    <div className="min-h-screen bg-black text-zinc-100 font-sans selection:bg-purple-500/30">
+      <FloatingContact />
+
+      {/* Nav */}
+      <nav className="fixed top-0 w-full z-50 bg-black/50 backdrop-blur-md border-b border-zinc-800">
+        <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Image
+              src="/AItool.jpg"
+              alt="Phù Thủy AI"
+              width={32}
+              height={32}
+              className="w-8 h-8 rounded-lg object-cover shrink-0"
+            />
+            <span className="text-xl font-black tracking-tighter bg-clip-text text-transparent bg-gradient-to-r from-white to-zinc-500">
+              PHÙ THỦY AI
             </span>
           </div>
+          <Link
+            href={APP_URL}
+            className="bg-white text-black px-5 py-2 rounded-full font-bold text-sm hover:bg-zinc-200 transition"
+          >
+            Bắt đầu ngay
+          </Link>
+        </div>
+      </nav>
 
-          <h1 className="text-5xl md:text-7xl font-bold tracking-tight mb-6 leading-tight">
-            Biến mọi trí tưởng tượng <br />
-            <span className="bg-clip-text text-transparent bg-gradient-to-r from-fuchsia-400 to-purple-500">
-              thành hiện thực
+      {/* Hero */}
+      <section className="pt-32 pb-20 px-4">
+        <div className="max-w-5xl mx-auto text-center">
+          <div className="inline-flex items-center gap-2 bg-zinc-900 border border-zinc-800 px-4 py-1.5 rounded-full mb-8">
+            <span className="relative flex h-2 w-2">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-purple-400 opacity-75" />
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-purple-500" />
+            </span>
+            <span className="text-xs font-medium text-zinc-400 uppercase tracking-widest">
+              Dành riêng cho anh em No-Tech
+            </span>
+          </div>
+          <h1 className="text-5xl md:text-7xl font-black mb-8 leading-[1.1] tracking-tight">
+            Tạo Video AI Chuyên Nghiệp <br />
+            <span className="bg-clip-text text-transparent bg-gradient-to-r from-purple-400 via-blue-400 to-emerald-400">
+              Không Cần Biết Kỹ Thuật
             </span>
           </h1>
-
-          <p className="text-lg md:text-xl text-gray-400 mb-10 max-w-2xl mx-auto leading-relaxed">
-            Surreal.AI cung cấp bộ công cụ sáng tạo toàn diện: Tạo ảnh, dựng
-            video, làm nét và chuyển động hóa nhân vật chỉ trong vài giây.
+          <p className="text-xl text-zinc-400 max-w-2xl mx-auto mb-10 leading-relaxed">
+            Bạn mệt mỏi vì cài đặt Stable Diffusion? Phù Thủy AI mang đến những
+            Model đã được tinh chỉnh sẵn, nét căng 4K và luôn cập nhật Trend mới
+            nhất chỉ với 1 click.
           </p>
-
-          <div className="flex flex-col md:flex-row items-center justify-center gap-4">
-            <button className="w-full md:w-auto px-8 py-4 bg-white text-black rounded-full font-bold text-lg hover:bg-gray-100 transition-transform hover:scale-105 flex items-center justify-center gap-2 group">
-              <Zap className="w-5 h-5 fill-black" />
-              Sáng tạo ngay
-            </button>
-            <button className="w-full md:w-auto px-8 py-4 bg-white/10 border border-white/10 backdrop-blur-sm rounded-full font-bold text-lg hover:bg-white/20 transition-all flex items-center justify-center gap-2">
-              <Play className="w-5 h-5" />
-              Xem demo
-            </button>
-          </div>
-
-          {/* --- APP DASHBOARD PREVIEW --- */}
-          <div className="mt-20 relative group/preview max-w-5xl mx-auto">
-            <div className="absolute -inset-1 bg-gradient-to-r from-fuchsia-600 to-purple-600 rounded-2xl blur opacity-30 group-hover/preview:opacity-50 transition duration-1000"></div>
-            <div className="relative bg-black border border-white/10 rounded-2xl overflow-hidden shadow-2xl">
-              {/* Fake Browser Toolbar */}
-              <div className="flex items-center gap-2 px-4 py-3 border-b border-white/10 bg-neutral-900/90 backdrop-blur">
-                <div className="flex gap-1.5">
-                  <div className="w-3 h-3 rounded-full bg-red-500/80"></div>
-                  <div className="w-3 h-3 rounded-full bg-yellow-500/80"></div>
-                  <div className="w-3 h-3 rounded-full bg-green-500/80"></div>
-                </div>
-                <div className="flex-1 flex justify-center">
-                  <div className="bg-black/50 px-4 py-1 rounded-md text-xs text-gray-400 font-mono border border-white/5 flex items-center gap-2">
-                    <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
-                    app.surreal.ai/dashboard
-                  </div>
-                </div>
-                <div className="w-12"></div> {/* Spacer for alignment */}
-              </div>
-
-              {/* App Interface Body */}
-              <div className="aspect-[16/10] bg-black p-6 md:p-10 flex flex-col items-center justify-center">
-                {/* App Header */}
-                <div className="mb-8 md:mb-12 text-center">
-                  <h3 className="text-3xl md:text-5xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-fuchsia-300 via-pink-400 to-purple-400 tracking-tight">
-                    Surreal.AI
-                  </h3>
-                </div>
-
-                {/* Feature Grid - Recreated from User Image */}
-                <div className="w-full max-w-4xl">
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
-                    <a className="block h-full" href="/create-image">
-                      <div className="group/card rounded-[25px] p-1 sm:p-1.5 md:p-2 transition-all cursor-pointer flex flex-col bg-black border border-black">
-                        <div className="w-full aspect-[450/260] bg-[#2a2a2a] rounded-[20px] mb-2 sm:mb-3 md:mb-4 flex items-center justify-center shrink-0 overflow-hidden">
-                          <video
-                            src="/assets/taoanh.mp4"
-                            autoPlay
-                            loop
-                            muted
-                            playsInline
-                            className="w-full h-full object-cover"
-                          />
-                        </div>
-                        <h2 className="text-xs sm:text-sm md:text-base lg:text-lg font-bold text-white group-hover/card:bg-gradient-to-b group-hover/card:from-[#D344FF] group-hover/card:to-white/70 group-hover/card:bg-clip-text group-hover/card:text-transparent mb-[5px] transition-all truncate pl-1 sm:pl-1.5 md:pl-2">
-                          Tạo Ảnh
-                        </h2>
-                        <p className="text-gray-400 text-xs sm:text-xs md:text-sm leading-relaxed truncate shrink pl-1 sm:pl-1.5 md:pl-2 -mt-1">
-                          Biến mọi trí tưởng tượng thành hiện thực
-                        </p>
-                      </div>
-                    </a>
-
-                    <a className="block h-full" href="/create-video">
-                      <div className="group/card rounded-[25px] p-1 sm:p-1.5 md:p-2 transition-all cursor-pointer flex flex-col bg-black border border-black">
-                        <div className="w-full aspect-[450/260] bg-[#2a2a2a] rounded-[20px] mb-2 sm:mb-3 md:mb-4 flex items-center justify-center shrink-0 overflow-hidden">
-                          <video
-                            src="/assets/taovideo.mp4"
-                            autoPlay
-                            loop
-                            muted
-                            playsInline
-                            className="w-full h-full object-cover"
-                          />
-                        </div>
-                        <h2 className="text-xs sm:text-sm md:text-base lg:text-lg font-bold text-white group-hover/card:bg-gradient-to-b group-hover/card:from-[#D344FF] group-hover/card:to-white/70 group-hover/card:bg-clip-text group-hover/card:text-transparent mb-[5px] transition-all truncate pl-1 sm:pl-1.5 md:pl-2">
-                          Tạo Video
-                        </h2>
-                        <p className="text-gray-400 text-xs sm:text-xs md:text-sm leading-relaxed truncate shrink pl-1 sm:pl-1.5 md:pl-2 -mt-1">
-                          Biến ảnh tĩnh nhàm chán trở nên hấp dẫn hơn
-                        </p>
-                      </div>
-                    </a>
-
-                    <a className="block h-full" href="/dance-image-bg">
-                      <div className="group/card rounded-[25px] p-1 sm:p-1.5 md:p-2 transition-all cursor-pointer flex flex-col bg-black border border-black">
-                        <div className="w-full aspect-[450/260] bg-[#2a2a2a] rounded-[20px] mb-2 sm:mb-3 md:mb-4 flex items-center justify-center shrink-0 overflow-hidden">
-                          <video
-                            src="/assets/taochuyendong.mp4"
-                            autoPlay
-                            loop
-                            muted
-                            playsInline
-                            className="w-full h-full object-cover"
-                          />
-                        </div>
-                        <h2 className="text-xs sm:text-sm md:text-base lg:text-lg font-bold text-white group-hover/card:bg-gradient-to-b group-hover/card:from-[#D344FF] group-hover/card:to-white/70 group-hover/card:bg-clip-text group-hover/card:text-transparent mb-[5px] transition-all truncate pl-1 sm:pl-1.5 md:pl-2">
-                          Tạo Chuyển Động
-                        </h2>
-                        <p className="text-gray-400 text-xs sm:text-xs md:text-sm leading-relaxed truncate shrink pl-1 sm:pl-1.5 md:pl-2 -mt-1">
-                          Tạo nhân vật AI chuyển động theo ý muốn
-                        </p>
-                      </div>
-                    </a>
-
-                    <a className="block h-full" href="/upscale-image">
-                      <div className="group/card rounded-[25px] p-1 sm:p-1.5 md:p-2 transition-all cursor-pointer flex flex-col bg-black border border-black">
-                        <div className="w-full aspect-[450/260] bg-[#2a2a2a] rounded-[20px] mb-2 sm:mb-3 md:mb-4 flex items-center justify-center shrink-0 overflow-hidden">
-                          <img
-                            alt="Làm Nét Ảnh"
-                            loading="lazy"
-                            width={400}
-                            height={300}
-                            decoding="async"
-                            className="w-full h-full object-cover"
-                            src="/assets/lamnetanh.jpg"
-                            style={{ color: "transparent" }}
-                          />
-                        </div>
-                        <h2 className="text-xs sm:text-sm md:text-base lg:text-lg font-bold text-white group-hover/card:bg-gradient-to-b group-hover/card:from-[#D344FF] group-hover/card:to-white/70 group-hover/card:bg-clip-text group-hover/card:text-transparent mb-[5px] transition-all truncate pl-1 sm:pl-1.5 md:pl-2">
-                          Làm Nét Ảnh
-                        </h2>
-                        <p className="text-gray-400 text-xs sm:text-xs md:text-sm leading-relaxed truncate shrink pl-1 sm:pl-1.5 md:pl-2 -mt-1">
-                          Tăng chất lượng hình ảnh lên tới 4k
-                        </p>
-                      </div>
-                    </a>
-                  </div>
-                </div>
-
-                {/* Top Picks Section inside App */}
-                <div className="w-full max-w-4xl mt-8">
-                  <h5 className="text-sm font-bold text-fuchsia-500 mb-3 uppercase tracking-wider text-left">
-                    Top Lựa Chọn
-                  </h5>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
-                    <a className="block h-full" href="/models/google-banana-pro">
-                      <div className="group/card rounded-[25px] p-1 sm:p-1.5 md:p-2 transition-all cursor-pointer flex flex-col bg-[#1E1E1E]">
-                        <div className="w-full aspect-[450/260] bg-[#2a2a2a] rounded-[20px] mb-2 sm:mb-3 md:mb-4 flex items-center justify-center shrink-0 overflow-hidden">
-                          <video
-                            src="/assets/ggbanana.mp4"
-                            autoPlay
-                            loop
-                            muted
-                            playsInline
-                            className="w-full h-full object-cover"
-                          />
-                        </div>
-                        <h2 className="text-sm sm:text-base md:text-lg lg:text-xl font-bold text-white group-hover/card:bg-gradient-to-b group-hover/card:from-[#D344FF] group-hover/card:to-white/70 group-hover/card:bg-clip-text group-hover/card:text-transparent mb-[5px] transition-all truncate pl-1 sm:pl-1.5 md:pl-2">
-                          Google Banana Pro
-                        </h2>
-                        <p className="text-gray-400 text-xs sm:text-sm md:text-base leading-relaxed truncate shrink pl-1 sm:pl-1.5 md:pl-2 -mt-1">
-                          Model tạo ảnh tốt nhất hiện nay
-                        </p>
-                      </div>
-                    </a>
-
-                    <a className="block h-full" href="/dance-image-bg">
-                      <div className="group/card rounded-[25px] p-1 sm:p-1.5 md:p-2 transition-all cursor-pointer flex flex-col bg-[#1E1E1E]">
-                        <div className="w-full aspect-[450/260] bg-[#2a2a2a] rounded-[20px] mb-2 sm:mb-3 md:mb-4 flex items-center justify-center shrink-0 overflow-hidden">
-                          <video
-                            src="/assets/nhayvoinentuanh.mp4"
-                            autoPlay
-                            loop
-                            muted
-                            playsInline
-                            className="w-full h-full object-cover"
-                          />
-                        </div>
-                        <h2 className="text-sm sm:text-base md:text-lg lg:text-xl font-bold text-white group-hover/card:bg-gradient-to-b group-hover/card:from-[#D344FF] group-hover/card:to-white/70 group-hover/card:bg-clip-text group-hover/card:text-transparent mb-[5px] transition-all truncate pl-1 sm:pl-1.5 md:pl-2">
-                          Nhảy Với Nền Từ Ảnh
-                        </h2>
-                        <p className="text-gray-400 text-xs sm:text-sm md:text-base leading-relaxed truncate shrink pl-1 sm:pl-1.5 md:pl-2 -mt-1">
-                          AI sẽ tạo video nhảy dùng nền từ ảnh gốc
-                        </p>
-                      </div>
-                    </a>
-
-                    <a className="block h-full" href="/dance-video-bg">
-                      <div className="group/card rounded-[25px] p-1 sm:p-1.5 md:p-2 transition-all cursor-pointer flex flex-col bg-[#1E1E1E]">
-                        <div className="w-full aspect-[450/260] bg-[#2a2a2a] rounded-[20px] mb-2 sm:mb-3 md:mb-4 flex items-center justify-center shrink-0 overflow-hidden">
-                          <video
-                            src="/assets/nhayvoinentuvideo.mp4"
-                            autoPlay
-                            loop
-                            muted
-                            playsInline
-                            className="w-full h-full object-cover"
-                          />
-                        </div>
-                        <h2 className="text-sm sm:text-base md:text-lg lg:text-xl font-bold text-white group-hover/card:bg-gradient-to-b group-hover/card:from-[#D344FF] group-hover/card:to-white/70 group-hover/card:bg-clip-text group-hover/card:text-transparent mb-[5px] transition-all truncate pl-1 sm:pl-1.5 md:pl-2">
-                          Nhảy Với Nền Từ Video
-                        </h2>
-                        <p className="text-gray-400 text-xs sm:text-sm md:text-base leading-relaxed truncate shrink pl-1 sm:pl-1.5 md:pl-2 -mt-1">
-                          AI sẽ tạo video nhảy dùng nền từ video gốc
-                        </p>
-                      </div>
-                    </a>
-
-                    <a className="block h-full" href="/change-outfit">
-                      <div className="group/card rounded-[25px] p-1 sm:p-1.5 md:p-2 transition-all cursor-pointer flex flex-col bg-[#1E1E1E]">
-                        <div className="w-full aspect-[450/260] bg-[#2a2a2a] rounded-[20px] mb-2 sm:mb-3 md:mb-4 flex items-center justify-center shrink-0 overflow-hidden">
-                          <img
-                            alt="Thay Trang Phục"
-                            loading="lazy"
-                            width={400}
-                            height={300}
-                            decoding="async"
-                            className="w-full h-full object-cover"
-                            src="/assets/thaytrangphuc.jpg"
-                            style={{ color: "transparent" }}
-                          />
-                        </div>
-                        <h2 className="text-sm sm:text-base md:text-lg lg:text-xl font-bold text-white group-hover/card:bg-gradient-to-b group-hover/card:from-[#D344FF] group-hover/card:to-white/70 group-hover/card:bg-clip-text group-hover/card:text-transparent mb-[5px] transition-all truncate pl-1 sm:pl-1.5 md:pl-2">
-                          Thay Trang Phục
-                        </h2>
-                        <p className="text-gray-400 text-xs sm:text-sm md:text-base leading-relaxed truncate shrink pl-1 sm:pl-1.5 md:pl-2 -mt-1">
-                          Thay mọi trang phục bạn muốn
-                        </p>
-                      </div>
-                    </a>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-        </Vortex>
-      </section>
-
-      {/* --- PARTNERS --- */}
-      <section className="py-10 border-y border-white/5 bg-white/[0.02]">
-        <div className="container mx-auto px-6">
-          <p className="text-center text-sm text-gray-500 mb-8 uppercase tracking-widest">
-            Được tin dùng bởi các nhà sáng tạo từ
-          </p>
-          <div className="flex flex-wrap justify-center gap-12 md:gap-20 opacity-50 grayscale hover:grayscale-0 transition-all duration-500">
-            {/* Mock Logos */}
-            {["Studio X", "DesignLab", "FutureVision", "ArtTech", "PixelPerfect"].map(
-              (brand) => (
-                <span
-                  key={brand}
-                  className="text-xl font-bold font-mono text-white flex items-center gap-2"
-                >
-                  <Aperture className="w-6 h-6" /> {brand}
-                </span>
-              )
-            )}
-          </div>
-        </div>
-      </section>
-
-      {/* --- FEATURES SECTION --- */}
-      <section id="features" className="py-24 relative">
-        <div className="container mx-auto px-6">
-          <div className="mb-20">
-            <h2 className="text-3xl md:text-5xl font-bold mb-6">
-              Bộ công cụ <span className="text-fuchsia-500">toàn năng</span>
-            </h2>
-            <p className="text-gray-400 max-w-2xl text-lg">
-              Không chỉ là tạo ảnh. Surreal.AI mang đến một hệ sinh thái đầy đủ
-              để bạn sản xuất nội dung số chất lượng điện ảnh.
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            {/* Feature 1: Image Gen */}
-            <div className="group relative bg-neutral-900 border border-white/10 rounded-3xl p-8 hover:border-fuchsia-500/50 transition-colors overflow-hidden">
-              <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
-                <ImageIcon className="w-32 h-32" />
-              </div>
-              <div className="relative z-10">
-                <div className="w-12 h-12 rounded-xl bg-blue-500/20 text-blue-400 flex items-center justify-center mb-6">
-                  <Wand2 className="w-6 h-6" />
-                </div>
-                <h3 className="text-2xl font-bold mb-3">
-                  Tạo Ảnh (Text-to-Image)
-                </h3>
-                <p className="text-gray-400 mb-6">
-                  Biến những dòng mô tả văn bản thành tác phẩm nghệ thuật chi tiết
-                  đến kinh ngạc. Hỗ trợ nhiều phong cách từ Anime, 3D đến Siêu
-                  thực.
-                </p>
-                <div className="rounded-xl overflow-hidden h-64 w-full bg-black/50 border border-white/5 relative">
-                  <video
-                    src="/assets/taoanh.mp4"
-                    autoPlay
-                    loop
-                    muted
-                    playsInline
-                    preload="metadata"
-                    className="w-full h-full object-cover opacity-80 group-hover:scale-105 transition-transform duration-700"
-                  />
-                </div>
-              </div>
-            </div>
-
-            {/* Feature 2: Video Gen */}
-            <div className="group relative bg-neutral-900 border border-white/10 rounded-3xl p-8 hover:border-purple-500/50 transition-colors overflow-hidden">
-              <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
-                <Film className="w-32 h-32" />
-              </div>
-              <div className="relative z-10">
-                <div className="w-12 h-12 rounded-xl bg-orange-500/20 text-orange-400 flex items-center justify-center mb-6">
-                  <Film className="w-6 h-6" />
-                </div>
-                <h3 className="text-2xl font-bold mb-3">
-                  Tạo Video (Text-to-Video)
-                </h3>
-                <p className="text-gray-400 mb-6">
-                  Biến ảnh tĩnh nhàm chán trở nên hấp dẫn hơn với các hiệu ứng
-                  chuyển động AI. Tạo thước phim ngắn chỉ từ một tấm ảnh gốc.
-                </p>
-                <div className="rounded-xl overflow-hidden h-64 w-full bg-black/50 border border-white/5 relative flex items-center justify-center">
-                  <video
-                    src="/assets/taovideo.mp4"
-                    autoPlay
-                    loop
-                    muted
-                    playsInline
-                    preload="metadata"
-                    className="absolute w-full h-full object-cover opacity-60"
-                  />
-                  <div className="w-16 h-16 rounded-full bg-white/20 backdrop-blur border border-white/30 flex items-center justify-center z-20 group-hover:scale-110 transition-transform">
-                    <Play className="w-6 h-6 text-white ml-1" />
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Feature 3: Upscale */}
-            <div className="group relative bg-neutral-900 border border-white/10 rounded-3xl p-8 hover:border-green-500/50 transition-colors overflow-hidden">
-              <div className="relative z-10">
-                <div className="w-12 h-12 rounded-xl bg-green-500/20 text-green-400 flex items-center justify-center mb-6">
-                  <Layers className="w-6 h-6" />
-                </div>
-                <h3 className="text-2xl font-bold mb-3">
-                  Làm Nét Ảnh (Upscale 4K)
-                </h3>
-                <p className="text-gray-400 mb-6">
-                  Phục hồi ảnh cũ, ảnh mờ hoặc ảnh chất lượng thấp lên độ phân
-                  giải 4K sắc nét. Giữ nguyên chi tiết khuôn mặt và kết cấu.
-                </p>
-              </div>
-              <div className="mt-4 flex gap-1 h-40">
-                <div className="flex-1 bg-gray-800 rounded-lg overflow-hidden relative border-r border-white/20">
-                  <img
-                    src="https://images.unsplash.com/photo-1544005313-94ddf0286df2?q=80&w=100"
-                    className="w-full h-full object-cover blur-[2px]"
-                    alt="Blurry"
-                  />
-                  <span className="absolute bottom-2 left-2 text-[10px] bg-black/50 px-2 py-0.5 rounded text-white">
-                    Trước
-                  </span>
-                </div>
-                <div className="flex-1 bg-gray-800 rounded-lg overflow-hidden relative">
-                  <img
-                    src="https://images.unsplash.com/photo-1544005313-94ddf0286df2?q=80&w=1976"
-                    className="w-full h-full object-cover"
-                    alt="Sharp"
-                  />
-                  <span className="absolute bottom-2 left-2 text-[10px] bg-green-500/80 px-2 py-0.5 rounded text-white font-bold">
-                    Sau (4K)
-                  </span>
-                </div>
-              </div>
-            </div>
-
-            {/* Feature 4: Animation */}
-            <div className="group relative bg-neutral-900 border border-white/10 rounded-3xl p-8 hover:border-pink-500/50 transition-colors overflow-hidden">
-              <div className="relative z-10">
-                <div className="w-12 h-12 rounded-xl bg-pink-500/20 text-pink-400 flex items-center justify-center mb-6">
-                  <Wand2 className="w-6 h-6" />
-                </div>
-                <h3 className="text-2xl font-bold mb-3">Tạo Chuyển Động</h3>
-                <p className="text-gray-400 mb-6">
-                  Tạo nhân vật AI chuyển động theo ý muốn. Kiểm soát biểu cảm
-                  khuôn mặt, cử chỉ tay và hướng nhìn một cách chính xác.
-                </p>
-              </div>
-              <div className="mt-4 relative h-40 bg-gradient-to-r from-pink-900/20 to-purple-900/20 rounded-xl border border-white/5 flex items-center justify-between px-8">
-                <div className="text-center">
-                  <div className="w-16 h-16 rounded-full border-2 border-dashed border-gray-600 mb-2 mx-auto"></div>
-                  <span className="text-xs text-gray-500">Pose Gốc</span>
-                </div>
-                <ArrowRight className="text-gray-600" />
-                <div className="text-center">
-                  <div className="w-16 h-16 rounded-full bg-gradient-to-tr from-pink-500 to-purple-500 mb-2 mx-auto shadow-[0_0_15px_rgba(236,72,153,0.5)]"></div>
-                  <span className="text-xs text-fuchsia-400 font-bold">
-                    Kết quả
-                  </span>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* --- SHOWCASE / TOP PICKS --- */}
-      <section id="showcase" className="py-20">
-        <BackgroundBeamsWithCollision className="rounded-none">
-          <div className="container mx-auto px-6">
-          <div className="flex flex-col md:flex-row md:items-end justify-between mb-12 gap-4">
-            <div>
-              <h2 className="text-3xl font-bold mb-2">Thư viện sáng tạo</h2>
-              <p className="text-gray-400">
-                Các tác phẩm nổi bật được cộng đồng Surreal tạo ra.
-              </p>
-            </div>
-            <a
-              href="#"
-              className="flex items-center text-fuchsia-400 hover:text-fuchsia-300 font-medium transition-colors"
+          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <Link
+              href={APP_URL}
+              className="bg-purple-600 hover:bg-purple-500 text-white px-8 py-4 rounded-2xl font-bold text-lg flex items-center justify-center gap-2 transition-all shadow-lg shadow-purple-500/20"
             >
-              Xem tất cả <ChevronRight className="w-4 h-4 ml-1" />
-            </a>
-          </div>
-
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 h-[600px] md:h-[500px]">
-            <div className="col-span-2 md:col-span-1 row-span-2 rounded-2xl overflow-hidden relative group">
-              <img
-                src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=1964&auto=format&fit=crop"
-                className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
-                alt="Gallery 1"
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex flex-col justify-end p-4">
-                <span className="text-sm font-bold">Chân dung Cyberpunk</span>
-                <span className="text-xs text-gray-400">@creator_one</span>
-              </div>
-            </div>
-            <div className="rounded-2xl overflow-hidden relative group">
-              <img
-                src="https://images.unsplash.com/photo-1614728263952-84ea256f9679?q=80&w=2008&auto=format&fit=crop"
-                className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
-                alt="Gallery 2"
-              />
-              <div className="absolute inset-0 bg-black/40 group-hover:bg-transparent transition-colors"></div>
-            </div>
-            <div className="col-span-2 md:col-span-2 row-span-2 rounded-2xl overflow-hidden relative group">
-              <img
-                src="https://images.unsplash.com/photo-1633511090164-b43840ea1607?q=80&w=2070&auto=format&fit=crop"
-                className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
-                alt="Gallery 3"
-              />
-              <div className="absolute top-4 left-4 bg-fuchsia-600 text-white text-xs font-bold px-3 py-1 rounded-full">
-                Top Lựa Chọn
-              </div>
-              <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex flex-col justify-end p-6">
-                <span className="text-xl font-bold">Thế giới ảo ảnh 3D</span>
-                <p className="text-sm text-gray-300 line-clamp-2 mt-1">
-                  Sử dụng model Surreal V4 để tạo ra độ chi tiết đáng kinh ngạc
-                  trong môi trường thiếu sáng.
-                </p>
-              </div>
-            </div>
-            <div className="rounded-2xl overflow-hidden relative group">
-              <img
-                src="https://images.unsplash.com/photo-1618172193763-c511deb635ca?q=80&w=1964&auto=format&fit=crop"
-                className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
-                alt="Gallery 4"
-              />
-            </div>
-          </div>
-          </div>
-        </BackgroundBeamsWithCollision>
-      </section>
-
-      {/* --- PRICING CTA --- */}
-      <section id="pricing" className="py-24 relative overflow-hidden">
-        {/* Background effects */}
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-gradient-to-r from-fuchsia-600/20 to-purple-600/20 rounded-full blur-[100px] -z-10"></div>
-
-        <div className="container mx-auto px-6 max-w-4xl text-center">
-          <h2 className="text-4xl md:text-5xl font-bold mb-6">
-            Sẵn sàng để bứt phá giới hạn?
-          </h2>
-          <p className="text-xl text-gray-300 mb-10">
-            Gia nhập cộng đồng hơn 100,000 creator đang sử dụng Surreal.AI để
-            kiến tạo tương lai.
-          </p>
-
-          <div className="bg-neutral-900/80 backdrop-blur-md border border-white/10 rounded-3xl p-8 md:p-12 flex flex-col md:flex-row items-center justify-between gap-8 hover:border-fuchsia-500/50 transition-all shadow-2xl">
-            <div className="text-left">
-              <span className="text-fuchsia-400 font-bold tracking-wider text-sm uppercase">
-                Gói Agency
-              </span>
-              <div className="text-5xl font-bold mt-2 mb-1 flex items-baseline">
-                500.000đ<span className="text-lg text-gray-500 font-normal">/500 coin</span>
-              </div>
-             
-            </div>
-
-            <div className="h-px w-full md:w-px md:h-24 bg-white/10"></div>
-
-            <ul className="text-left space-y-3">
-              {[
-                "Không giới hạn tạo ảnh",
-                "Video 4K chất lượng cao",
-                "Ưu tiên xử lý nhanh",
-                "Quyền thương mại",
-              ].map((item) => (
-                <li key={item} className="flex items-center gap-2 text-gray-300">
-                  <div className="bg-green-500/20 p-1 rounded-full">
-                    <Star className="w-3 h-3 text-green-400 fill-green-400" />
-                  </div>
-                  {item}
-                </li>
-              ))}
-            </ul>
-
-            <button className="w-full md:w-auto bg-white text-black px-8 py-4 rounded-xl font-bold hover:bg-fuchsia-50 transition-colors shadow-lg shadow-white/10">
-              Bắt đầu ngay
-            </button>
+              Trải nghiệm Model Pro Miễn Phí
+              <ChevronRight size={20} aria-hidden />
+            </Link>
+            <Link
+              href={APP_URL}
+              className="bg-zinc-900 border border-zinc-800 hover:bg-zinc-800 text-white px-8 py-4 rounded-2xl font-bold text-lg transition-all inline-flex items-center justify-center"
+            >
+              Xem Video mẫu
+            </Link>
           </div>
         </div>
       </section>
 
-      {/* --- FOOTER --- */}
-      <footer className="bg-black border-t border-white/10 pt-20 pb-10">
-        <div className="container mx-auto px-6">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-12 mb-16">
-            <div className="col-span-1 md:col-span-1">
-              <div className="flex items-center gap-2 mb-6">
-                <div className="w-6 h-6 bg-gradient-to-br from-fuchsia-500 to-purple-600 rounded flex items-center justify-center">
-                  <Wand2 className="text-white w-3 h-3" />
+      {/* Chúng tôi làm hết phần khó */}
+      <section className="py-20 bg-zinc-950">
+        <div className="max-w-7xl mx-auto px-4">
+          <div className="grid md:grid-cols-2 gap-12 items-center">
+            <div className="relative group">
+              <div className="absolute -inset-1 bg-gradient-to-r from-purple-600 to-blue-600 rounded-2xl blur opacity-25 group-hover:opacity-40 transition duration-1000" />
+              <div className="relative bg-zinc-900 rounded-2xl p-4 border border-zinc-800 overflow-hidden">
+                <div className="flex justify-between items-center mb-4 px-2">
+                  <span className="text-sm font-bold text-purple-400">
+                    Kết quả từ Phù Thủy AI
+                  </span>
+                  <span className="text-[10px] bg-zinc-800 px-2 py-0.5 rounded text-zinc-400 uppercase">
+                    Model: Kling AI v1.5
+                  </span>
                 </div>
-                <span className="text-xl font-bold text-white">Surreal.AI</span>
+                <div className="aspect-video bg-zinc-800 rounded-lg flex items-center justify-center relative overflow-hidden">
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent flex items-end p-6 z-10">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-full bg-white/10 backdrop-blur-md flex items-center justify-center">
+                        <Video size={18} className="text-white" aria-hidden />
+                      </div>
+                      <div>
+                        <p className="text-sm font-bold">Chất lượng thực tế</p>
+                        <p className="text-xs text-zinc-400">
+                          Sử dụng công nghệ Kling AI tối tân nhất hiện nay
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                  <Image
+                    src="https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&q=80&w=1200"
+                    alt="Kling AI Example"
+                    fill
+                    className="object-cover opacity-60"
+                    sizes="(max-width: 768px) 100vw, 50vw"
+                  />
+                </div>
               </div>
-              <p className="text-gray-500 text-sm leading-relaxed">
-                Nền tảng trí tuệ nhân tạo tiên phong, giúp bạn hiện thực hóa mọi ý
-                tưởng điên rồ nhất thành hình ảnh và video sống động.
-              </p>
             </div>
-
             <div>
-              <h4 className="font-bold mb-6 text-white">Sản phẩm</h4>
-              <ul className="space-y-4 text-sm text-gray-500">
-                <li>
-                  <a href="#" className="hover:text-fuchsia-400 transition-colors">
-                    AI Generator
-                  </a>
+              <h2 className="text-3xl font-bold mb-6 italic uppercase text-white">
+                Chúng tôi làm hết phần khó cho bạn
+              </h2>
+              <ul className="space-y-6">
+                <li className="flex gap-4">
+                  <div className="mt-1 shrink-0 w-6 h-6 bg-emerald-500/20 rounded-full flex items-center justify-center">
+                    <CircleCheckBig
+                      className="text-emerald-500"
+                      size={16}
+                      aria-hidden
+                    />
+                  </div>
+                  <div>
+                    <h4 className="font-bold text-white uppercase tracking-wide text-sm md:text-base">
+                      Prompt Engineer Tinh Chỉnh
+                    </h4>
+                    <p className="text-zinc-400 text-sm leading-relaxed">
+                      Không cần viết câu lệnh dài dòng. Chuyên gia của chúng tôi
+                      đã tối ưu sẵn bộ prompt &quot;xịn&quot; nhất cho từng thể loại
+                      video.
+                    </p>
+                  </div>
                 </li>
-                <li>
-                  <a href="#" className="hover:text-fuchsia-400 transition-colors">
-                    Video Maker
-                  </a>
+                <li className="flex gap-4">
+                  <div className="mt-1 shrink-0 w-6 h-6 bg-emerald-500/20 rounded-full flex items-center justify-center">
+                    <CircleCheckBig
+                      className="text-emerald-500"
+                      size={16}
+                      aria-hidden
+                    />
+                  </div>
+                  <div>
+                    <h4 className="font-bold text-white uppercase tracking-wide text-sm md:text-base">
+                      Bắt Trend Mượt Mà
+                    </h4>
+                    <p className="text-zinc-400 text-sm leading-relaxed">
+                      Trend AI nào hot trên TikTok, chúng tôi cập nhật Model đó
+                      trong 24h. Bạn chỉ việc vào và &quot;húp&quot; thành quả
+                      ngay lập tức.
+                    </p>
+                  </div>
                 </li>
-                <li>
-                  <a href="#" className="hover:text-fuchsia-400 transition-colors">
-                    Image Upscaler
-                  </a>
-                </li>
-                <li>
-                  <a href="#" className="hover:text-fuchsia-400 transition-colors">
-                    API cho Developers
-                  </a>
-                </li>
-              </ul>
-            </div>
-
-            <div>
-              <h4 className="font-bold mb-6 text-white">Tài nguyên</h4>
-              <ul className="space-y-4 text-sm text-gray-500">
-                <li>
-                  <a href="#" className="hover:text-fuchsia-400 transition-colors">
-                    Cộng đồng
-                  </a>
-                </li>
-                <li>
-                  <a href="#" className="hover:text-fuchsia-400 transition-colors">
-                    Hướng dẫn sử dụng
-                  </a>
-                </li>
-                <li>
-                  <a href="#" className="hover:text-fuchsia-400 transition-colors">
-                    Blog
-                  </a>
-                </li>
-                <li>
-                  <a href="#" className="hover:text-fuchsia-400 transition-colors">
-                    Trung tâm hỗ trợ
-                  </a>
-                </li>
-              </ul>
-            </div>
-
-            <div>
-              <h4 className="font-bold mb-6 text-white">Pháp lý</h4>
-              <ul className="space-y-4 text-sm text-gray-500">
-                <li>
-                  <a href="#" className="hover:text-fuchsia-400 transition-colors">
-                    Điều khoản sử dụng
-                  </a>
-                </li>
-                <li>
-                  <a href="#" className="hover:text-fuchsia-400 transition-colors">
-                    Chính sách bảo mật
-                  </a>
-                </li>
-                <li>
-                  <a href="#" className="hover:text-fuchsia-400 transition-colors">
-                    Bản quyền
-                  </a>
+                <li className="flex gap-4">
+                  <div className="mt-1 shrink-0 w-6 h-6 bg-emerald-500/20 rounded-full flex items-center justify-center">
+                    <CircleCheckBig
+                      className="text-emerald-500"
+                      size={16}
+                      aria-hidden
+                    />
+                  </div>
+                  <div>
+                    <h4 className="font-bold text-white uppercase tracking-wide text-sm md:text-base">
+                      Rẻ Hơn & Nhanh Hơn
+                    </h4>
+                    <p className="text-zinc-400 text-sm leading-relaxed">
+                      Không cần thuê GPU $20/tháng. Chỉ trả tiền cho những gì bạn
+                      thực sự tạo ra với chi phí cực kỳ hạt dẻ dành riêng cho ae
+                      Việt Nam.
+                    </p>
+                  </div>
                 </li>
               </ul>
             </div>
           </div>
+        </div>
+      </section>
 
-          <div className="border-t border-white/10 pt-8 flex flex-col md:flex-row justify-between items-center gap-4">
-            <p className="text-gray-600 text-sm">
-              © 2024 Surreal.AI Inc. All rights reserved.
+      {/* Đặc Quyền */}
+      <section className="py-24 px-4">
+        <div className="max-w-7xl mx-auto">
+          <div className="text-center mb-16">
+            <h2 className="text-3xl md:text-5xl font-black mb-4 italic uppercase tracking-tighter text-white">
+              Đặc Quyền Của Phù Thủy AI
+            </h2>
+            <p className="text-zinc-400">
+              Tại sao hàng ngàn Creator tin dùng chúng tôi thay vì tự cài đặt?
             </p>
-            <div className="flex gap-6">
-              {/* Social Icons placeholders */}
-              <div className="w-5 h-5 bg-gray-800 hover:bg-fuchsia-500 transition-colors rounded-full cursor-pointer"></div>
-              <div className="w-5 h-5 bg-gray-800 hover:bg-fuchsia-500 transition-colors rounded-full cursor-pointer"></div>
-              <div className="w-5 h-5 bg-gray-800 hover:bg-fuchsia-500 transition-colors rounded-full cursor-pointer"></div>
+          </div>
+          <div className="grid md:grid-cols-3 gap-6">
+            <FeatureCard
+              icon={MousePointer2}
+              title="Cực Dễ Cho No-Tech"
+              description="Giao diện thuần Việt, lược bỏ mọi thông số kỹ thuật đau đầu. Bạn chỉ cần chọn phong cách và upload ảnh."
+              badge="Dễ dùng"
+            />
+            <FeatureCard
+              icon={Cpu}
+              title="Model Tối Tân (Kling AI)"
+              description="Sử dụng các model chuyên nghiệp nhất: Kling AI, Flux, SDXL, Sora... đã được lọc lỗi và tinh chỉnh độ nét 4K."
+              badge="Cực xịn"
+            />
+            <FeatureCard
+              icon={TrendingUp}
+              title="Không Lo Lỗi Thời"
+              description="Quên việc update model thủ công đi. Phù Thủy AI tự động cập nhật những công nghệ AI mới nhất toàn cầu."
+              badge="Cập nhật"
+            />
+          </div>
+        </div>
+      </section>
+
+      {/* FAQ */}
+      <section className="py-24 px-4 bg-zinc-950">
+        <div className="max-w-4xl mx-auto">
+          <div className="flex items-center gap-4 mb-12">
+            <div className="w-12 h-12 bg-purple-600 rounded-full flex items-center justify-center shadow-lg shadow-purple-500/20">
+              <CircleHelp size={28} className="text-white" aria-hidden />
             </div>
+            <h2 className="text-3xl md:text-4xl font-black italic uppercase text-white">
+              Giải đáp thắc mắc
+            </h2>
+          </div>
+          <div className="bg-zinc-900/30 border border-zinc-800 rounded-3xl p-8">
+            {faqs.map((faq, index) => (
+              <FAQItem
+                key={index}
+                question={faq.question}
+                answer={faq.answer}
+              />
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* CTA */}
+      <section className="py-20 px-4">
+        <div className="max-w-4xl mx-auto bg-gradient-to-br from-purple-900/40 to-blue-900/40 border border-purple-500/20 rounded-3xl p-12 text-center relative overflow-hidden">
+          <div className="absolute top-0 right-0 p-8 opacity-10">
+            <Sparkles size={120} aria-hidden />
+          </div>
+          <h2 className="text-4xl font-black mb-6 text-white">
+            Bạn Đã Sẵn Sàng Bẻ Cong Timeline?
+          </h2>
+          <p className="text-lg text-zinc-300 mb-8 max-w-xl mx-auto leading-relaxed">
+            Gia nhập cộng đồng Phù Thủy AI ngay hôm nay. Tạo video sắc nét với
+            Kling AI, bắt trend cực nhanh mà không cần máy mạnh.
+          </p>
+          <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
+            <Link
+              href={APP_URL}
+              className="bg-white text-black px-10 py-4 rounded-2xl font-black text-xl hover:scale-105 transition active:scale-95 shadow-xl"
+            >
+              DÙNG THỬ MIỄN PHÍ
+            </Link>
+            <div className="flex items-center gap-2 text-zinc-400 text-sm">
+              <ShieldCheck size={18} className="text-emerald-500" aria-hidden />
+              <span>Không cần cài đặt - Dùng ngay</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Footer */}
+      <footer className="py-16 border-t border-zinc-900 px-4 bg-black">
+        <div className="max-w-7xl mx-auto grid md:grid-cols-2 lg:grid-cols-4 gap-12 mb-12">
+          <div className="space-y-4">
+            <div className="flex items-center gap-2">
+              <Image
+                src="/AItool.jpg"
+                alt="Phù Thủy AI"
+                width={32}
+                height={32}
+                className="w-8 h-8 rounded-lg object-cover shrink-0"
+              />
+              <span className="text-xl font-black tracking-tighter text-white">
+                PHÙ THỦY AI
+              </span>
+            </div>
+            <p className="text-zinc-500 text-sm leading-relaxed">
+              Công cụ AI tối thượng nằm trong tay bạn. Tinh chỉnh bởi chuyên
+              gia, dành cho người dùng thực chiến.
+            </p>
+          </div>
+          <div className="space-y-4">
+            <h4 className="text-white font-bold uppercase tracking-wider text-sm">
+              Khám phá
+            </h4>
+            <ul className="text-zinc-500 text-sm space-y-2">
+              <li>
+                <Link href={`${APP_URL}/create-video`} className="hover:text-purple-400 cursor-pointer transition">
+                  Tạo Video Kling AI
+                </Link>
+              </li>
+              <li>
+                <Link href={`${APP_URL}/upscale-image`} className="hover:text-purple-400 cursor-pointer transition">
+                  Làm nét ảnh 4K
+                </Link>
+              </li>
+              <li>
+                <Link href={`${APP_URL}/change-outfit`} className="hover:text-purple-400 cursor-pointer transition">
+                  Thay trang phục AI
+                </Link>
+              </li>
+            </ul>
+          </div>
+          <div className="space-y-4 md:col-span-2">
+            <h4 className="text-white font-bold uppercase tracking-wider text-sm">
+              📞 Liên hệ với chúng tôi
+            </h4>
+            <div className="grid sm:grid-cols-2 gap-4">
+              <a
+                href="https://zalo.me/0929862699"
+                target="_blank"
+                rel="noreferrer"
+                className="flex items-center gap-3 bg-zinc-900 border border-zinc-800 p-4 rounded-xl hover:border-blue-500 transition-all group"
+              >
+                <div className="w-10 h-10 bg-blue-500/10 rounded-full flex items-center justify-center group-hover:bg-blue-500/20 transition-colors">
+                  <Phone size={20} className="text-blue-400" aria-hidden />
+                </div>
+                <div>
+                  <p className="text-[10px] text-zinc-500 uppercase font-bold">
+                    Zalo cá nhân
+                  </p>
+                  <p className="text-white font-bold">0929 862 699</p>
+                </div>
+              </a>
+              <a
+                href="https://t.me/mmon_6789"
+                target="_blank"
+                rel="noreferrer"
+                className="flex items-center gap-3 bg-zinc-900 border border-zinc-800 p-4 rounded-xl hover:border-sky-500 transition-all group"
+              >
+                <div className="w-10 h-10 bg-sky-500/10 rounded-full flex items-center justify-center group-hover:bg-sky-500/20 transition-colors">
+                  <MessageCircle size={20} className="text-sky-400" aria-hidden />
+                </div>
+                <div>
+                  <p className="text-[10px] text-zinc-500 uppercase font-bold">
+                    Telegram
+                  </p>
+                  <p className="text-white font-bold">@mmon_6789</p>
+                </div>
+              </a>
+            </div>
+          </div>
+        </div>
+        <div className="max-w-7xl mx-auto pt-8 border-t border-zinc-900 flex flex-col md:flex-row justify-between items-center gap-4">
+          <p className="text-zinc-600 text-xs font-medium">
+            © 2026 Phù Thủy AI - Sáng tạo không giới hạn
+          </p>
+          <div className="flex gap-6 text-zinc-500 text-[10px] uppercase tracking-widest font-bold">
+            <Link href="#" className="hover:text-purple-400 transition">
+              Điều khoản
+            </Link>
+            <Link href="#" className="hover:text-purple-400 transition">
+              Bảo mật
+            </Link>
           </div>
         </div>
       </footer>
     </div>
   );
 }
-

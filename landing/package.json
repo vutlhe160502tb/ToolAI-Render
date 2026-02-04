@@ -3,23 +3,16 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev --webpack",
+    "dev": "next dev -p 3001",
     "build": "next build",
-    "start": "next start",
-    "lint": "eslint",
-    "clean": "node -e \"const fs=require('fs');['.next','.turbo','.swc'].forEach(d=>{try{fs.rmSync(d,{recursive:true,force:true});console.log('Removed',d)}catch(e){}});require('child_process').exec('find . -name \\\\\\\"*.tsbuildinfo\\\\\\\" -delete',()=>{})\"",
-    "clean:all": "npm run clean && rm -rf node_modules",
-    "fresh": "npm run clean:all && npm install"
+    "start": "next start -p 3001",
+    "lint": "eslint ."
   },
   "dependencies": {
-    "clsx": "^2.1.1",
     "lucide-react": "^0.562.0",
-    "motion": "^12.23.22",
     "next": "16.1.4",
     "react": "19.2.3",
-    "react-dom": "19.2.3",
-    "simplex-noise": "^4.0.3",
-    "tailwind-merge": "^3.3.1"
+    "react-dom": "19.2.3"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",

@@ -1,31 +1,23 @@
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
 import "./globals.css";
-import type { ReactNode } from "react";
-
-const inter = Inter({
-  variable: "--font-inter",
-  subsets: ["latin"],
-  display: "swap",
-});
 
 export const metadata: Metadata = {
-  title: "Surreal.AI — Landing",
+  title: "Phù Thủy AI - Tạo Video AI Chuyên Nghiệp Không Cần Biết Kỹ Thuật",
   description:
-    "Surreal.AI cung cấp bộ công cụ sáng tạo toàn diện: Tạo ảnh, dựng video, làm nét và chuyển động hóa nhân vật.",
+    "Model đã tinh chỉnh sẵn, nét căng 4K, cập nhật Trend mới nhất chỉ với 1 click. Dành riêng cho anh em No-Tech.",
+  icons: { icon: "/AItool.jpg" },
 };
 
 export default function RootLayout({
   children,
 }: Readonly<{
-  children: ReactNode;
+  children: React.ReactNode;
 }>) {
   return (
     <html lang="vi">
-      <body className={`${inter.variable} font-sans antialiased`}>
+      <body className="bg-background text-foreground min-h-screen antialiased">
         {children}
       </body>
     </html>
   );
 }
-

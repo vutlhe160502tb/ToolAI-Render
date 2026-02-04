@@ -3,6 +3,7 @@ import { Inter } from "next/font/google";
 import "./globals.css";
 import { SessionProvider } from '@/components/SessionProvider';
 import MetaMaskErrorHandler from '@/components/MetaMaskErrorHandler';
+import SupportChatFloating from '@/components/SupportChatFloating';
 import { ToastProvider } from '@/contexts/ToastContext';
 
 const inter = Inter({
@@ -14,6 +15,7 @@ const inter = Inter({
 export const metadata: Metadata = {
   title: "Phù Thuỷ AI - Bẻ cong timeline",
   description: "Tạo video AI với nhiều tính năng đa dạng",
+  icons: { icon: "/AItool.jpg" },
 };
 
 export default function RootLayout({
@@ -30,6 +32,7 @@ export default function RootLayout({
         <SessionProvider>
           <ToastProvider>
             {children}
+            <SupportChatFloating />
           </ToastProvider>
         </SessionProvider>
       </body>

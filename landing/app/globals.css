@@ -2,9 +2,7 @@
 
 :root {
   --background: #000000;
-  --foreground: #ffffff;
-  --primary: #c026d3; /* fuchsia-600 */
-  --secondary: #7c3aed; /* violet-600 */
+  --foreground: #fafafa;
 }
 
 body {
@@ -12,38 +10,6 @@ body {
   color: var(--foreground);
 }
 
-/* Simple line-clamp utilities (avoid plugin dependency) */
-.line-clamp-1,
-.line-clamp-2 {
-  display: -webkit-box;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
+.selection\:bg-purple-500\/30 ::selection {
+  background-color: rgb(168 85 247 / 0.3);
 }
-.line-clamp-1 {
-  -webkit-line-clamp: 1;
-}
-.line-clamp-2 {
-  -webkit-line-clamp: 2;
-}
-
-@keyframes fadeInUp {
-  from {
-    opacity: 0;
-    transform: translate3d(0, 10px, 0);
-  }
-  to {
-    opacity: 1;
-    transform: translate3d(0, 0, 0);
-  }
-}
-
-.animate-fade-in-up {
-  animation: fadeInUp 800ms ease-out both;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .animate-fade-in-up {
-    animation: none;
-  }
-}
-

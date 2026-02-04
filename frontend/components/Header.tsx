@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import NextImage from 'next/image';
 import { Folder, Image, Video, Sparkles, Coins, LogOut, Gift } from 'lucide-react';
 import { useSession, signOut } from 'next-auth/react';
 import { Suspense, useState, useEffect, useRef, useCallback } from 'react';
@@ -200,8 +201,14 @@ function HeaderInner() {
           <div className="flex items-center gap-6">
             {/* Logo Icon - Purple rounded square */}
             <Link href="/" className="flex items-center">
-              <div className="w-10 h-10 bg-[#D344FF] rounded-lg flex items-center justify-center">
-                <Sparkles className="w-6 h-6 text-white" />
+              <div className="w-10 h-10 rounded-lg flex items-center justify-center overflow-hidden shrink-0">
+                <NextImage
+                  src="/AItool.jpg"
+                  alt="Phù Thủy AI"
+                  width={40}
+                  height={40}
+                  className="w-10 h-10 object-cover"
+                />
               </div>
             </Link>
 

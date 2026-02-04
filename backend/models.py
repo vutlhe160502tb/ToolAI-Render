@@ -29,7 +29,9 @@ class User(Base):
     __tablename__ = "users"
 
     id = Column(String, primary_key=True)
-    email = Column(String, unique=True, index=True)
+    email = Column(String, unique=True, index=True, nullable=True)
+    phone = Column(String, unique=True, index=True, nullable=True)
+    password_hash = Column(String, nullable=True)
     name = Column(String)
     picture = Column(String, nullable=True)  # Changed from avatar_url to match DB
     google_id = Column(String, nullable=True)  # Added to match DB

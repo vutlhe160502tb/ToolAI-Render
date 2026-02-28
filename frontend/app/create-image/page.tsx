@@ -4,7 +4,7 @@ import { Suspense, useState, useEffect, useRef } from 'react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
-import { Upload, Image as ImageIcon, Loader2, RotateCcw, Trash2, Video, ChevronDown, ArrowRight } from 'lucide-react';
+import { Upload, Image as ImageIcon, Loader2, RotateCcw, Trash2, Video, ArrowRight } from 'lucide-react';
 import axios from 'axios';
 import { useSession } from 'next-auth/react';
 import { useProgressBar } from '@/hooks/useProgressBar';
@@ -25,7 +25,6 @@ function CreateImagePageInner() {
   const [filePreviewUrl, setFilePreviewUrl] = useState<string | null>(null);
   const [fileNameTooltip, setFileNameTooltip] = useState<{ x: number; y: number } | null>(null);
   const [prompt, setPrompt] = useState('');
-  const [isAdvancedOpen, setIsAdvancedOpen] = useState(false);
   const [quality, setQuality] = useState('720P');
   const [qualityCost, setQualityCost] = useState(1);
   const [isQualityOpen, setIsQualityOpen] = useState(false);
@@ -465,34 +464,19 @@ function CreateImagePageInner() {
                   </div>
                 </div>
 
-                {/* Advanced Mode */}
-                <div className="mb-4 sm:mb-6 w-full min-w-0">
-                  <button
-                    onClick={() => setIsAdvancedOpen(!isAdvancedOpen)}
-                    className={`w-full flex items-center justify-between rounded-lg px-3 sm:px-4 py-2 transition-all overflow-hidden min-w-0 ${
-                      isAdvancedOpen ? 'bg-[#1A1A1A]' : 'bg-[#1A1A1A] hover:bg-[#3a3a3a]'
-                    }`}
-                  >
-                    <span className="text-white break-words flex-1 text-left" style={{ fontSize: 'clamp(0.625rem, 3vw, 0.875rem)' }}>Chế độ nâng cao</span>
-                    <ChevronDown className={`text-gray-400 transition-transform shrink-0 ml-2 ${isAdvancedOpen ? 'rotate-180' : ''}`} style={{ width: 'clamp(0.625rem, 3vw, 1rem)', height: 'clamp(0.625rem, 3vw, 1rem)' }} />
-                  </button>
-                  
-                  {/* Advanced Mode Panel */}
-                  {isAdvancedOpen && (
-                    <div className="mt-4 bg-[#2a2a2a] rounded-[20px] p-3 sm:p-4 overflow-hidden">
-                      <div className="text-white font-semibold mb-2 break-words" style={{ fontSize: 'clamp(0.625rem, 3vw, 0.875rem)' }}>Prompt</div>
-                      <p className="text-white mb-3 break-words leading-tight" style={{ fontSize: 'clamp(0.625rem, 3vw, 0.875rem)' }}>
-                        Bạn có thể miêu tả thêm cho ảnh như nền hay đồ vật hay chi tiết của người để thêm sinh động.
-                      </p>
-                      <textarea
-                        value={prompt}
-                        onChange={(e) => setPrompt(e.target.value)}
-                        placeholder="Nhập prompt của bạn..."
-                        className="w-full bg-[#1a1a1a] text-white rounded-lg px-3 sm:px-4 py-2 sm:py-3 min-h-[100px] sm:min-h-[120px] focus:outline-none resize-none break-words"
-                        style={{ fontSize: 'clamp(0.625rem, 3vw, 0.875rem)' }}
-                      />
-                    </div>
-                  )}
+                {/* Prompt - luôn hiện */}
+                <div className="mb-4 sm:mb-6 w-full min-w-0 bg-[#2a2a2a] rounded-[20px] p-3 sm:p-4 overflow-hidden">
+                  <div className="text-white font-semibold mb-2 break-words" style={{ fontSize: 'clamp(0.625rem, 3vw, 0.875rem)' }}>Prompt</div>
+                  <p className="text-white mb-3 break-words leading-tight" style={{ fontSize: 'clamp(0.625rem, 3vw, 0.875rem)' }}>
+                    Bạn có thể miêu tả thêm cho ảnh như nền hay đồ vật hay chi tiết của người để thêm sinh động.
+                  </p>
+                  <textarea
+                    value={prompt}
+                    onChange={(e) => setPrompt(e.target.value)}
+                    placeholder="Nhập prompt của bạn..."
+                    className="w-full bg-[#1a1a1a] text-white rounded-lg px-3 sm:px-4 py-2 sm:py-3 min-h-[100px] sm:min-h-[120px] focus:outline-none resize-none break-words"
+                    style={{ fontSize: 'clamp(0.625rem, 3vw, 0.875rem)' }}
+                  />
                 </div>
 
                 {/* Progress */}

@@ -4,7 +4,7 @@ import { Suspense, useState, useEffect, useRef } from 'react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
-import { Upload, Video, Loader2, Image as ImageIcon, ChevronDown, RotateCcw, Trash2, ArrowRight } from 'lucide-react';
+import { Upload, Video, Loader2, Image as ImageIcon, RotateCcw, Trash2, ArrowRight } from 'lucide-react';
 import axios from 'axios';
 import { useSession } from 'next-auth/react';
 import { useProgressBar } from '@/hooks/useProgressBar';
@@ -68,12 +68,12 @@ function DanceImageBgPageInner() {
   const [quality, setQuality] = useState('720P');
   const [qualityCost, setQualityCost] = useState(1);
   const [isQualityOpen, setIsQualityOpen] = useState(false);
-  const [isAdvancedOpen, setIsAdvancedOpen] = useState(false);
   const [prompt, setPrompt] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
   const [serverProgress, setServerProgress] = useState<number | null>(null);
   const [jobId, setJobId] = useState<string | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [videoPreviewUrl, setVideoPreviewUrl] = useState<string | null>(null);
   const [resultJobs, setResultJobs] = useState<VideoJob[]>([]);
   const [loadingJobs, setLoadingJobs] = useState(true);
   const [currentDisplayJob, setCurrentDisplayJob] = useState<VideoJob | null>(null);
@@ -112,6 +112,14 @@ function DanceImageBgPageInner() {
       document.removeEventListener('mousedown', handleClickOutside);
     };
   }, [isQualityOpen]);
+
+  // Revoke object URLs on unmount hoặc khi đổi file (tránh rò bộ nhớ)
+  useEffect(() => {
+    return () => {
+      if (previewUrl) URL.revokeObjectURL(previewUrl);
+      if (videoPreviewUrl) URL.revokeObjectURL(videoPreviewUrl);
+    };
+  }, [previewUrl, videoPreviewUrl]);
 
   // Fetch jobs history
   useEffect(() => {
@@ -168,40 +176,51 @@ function DanceImageBgPageInner() {
   };
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      const file = e.target.files[0];
-      const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
-      if (!allowedTypes.includes(file.type)) {
-        showToast('Chỉ chấp nhận file ảnh: JPEG, PNG, WebP', 'error');
-        return;
-      }
-      const MAX_SIZE = 50 * 1024 * 1024;
-      if (file.size > MAX_SIZE) {
-        showToast('Kích thước ảnh không được vượt quá 50MB', 'error');
-        return;
-      }
-      setImageFile(file);
-      const url = URL.createObjectURL(file);
-      setPreviewUrl(url);
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file) return;
+    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+    if (!allowedTypes.includes(file.type)) {
+      showToast('Chỉ chấp nhận file ảnh: JPEG, PNG, WebP', 'error');
+      return;
     }
+    const MAX_SIZE = 50 * 1024 * 1024;
+    if (file.size > MAX_SIZE) {
+      showToast('Kích thước ảnh không được vượt quá 50MB', 'error');
+      return;
+    }
+    setPreviewUrl((prev) => {
+      if (prev) URL.revokeObjectURL(prev);
+      return URL.createObjectURL(file);
+    });
+    setImageFile(file);
+    showToast(`Đã chọn ảnh: ${file.name}`, 'success');
   };
 
   const handleVideoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      const file = e.target.files[0];
-      const allowedTypes = ['video/mp4', 'video/quicktime', 'video/x-msvideo'];
-      if (!allowedTypes.includes(file.type)) {
-        showToast('Chỉ chấp nhận file video: MP4, MOV, AVI', 'error');
-        return;
-      }
-      const MAX_SIZE = 200 * 1024 * 1024;
-      if (file.size > MAX_SIZE) {
-        showToast('Kích thước video không được vượt quá 200MB', 'error');
-        return;
-      }
-      setVideoFile(file);
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file) return;
+    const allowedTypes = ['video/mp4', 'video/quicktime', 'video/x-msvideo'];
+    if (!allowedTypes.includes(file.type)) {
+      showToast('Chỉ chấp nhận file video: MP4, MOV, AVI', 'error');
+      return;
     }
+    const MAX_SIZE = 200 * 1024 * 1024;
+    if (file.size > MAX_SIZE) {
+      showToast('Kích thước video không được vượt quá 200MB', 'error');
+      return;
+    }
+    setVideoPreviewUrl((prev) => {
+      if (prev) URL.revokeObjectURL(prev);
+      return URL.createObjectURL(file);
+    });
+    setVideoFile(file);
+    showToast(`Đã chọn video: ${file.name}`, 'success');
   };
+
+  const truncateFileName = (name: string, maxLen = 18) =>
+    name.length <= maxLen ? name : name.slice(0, maxLen - 3) + '...';
 
   const handleGenerate = async () => {
     const user_id = (session?.user as any)?.id;
@@ -378,14 +397,14 @@ function DanceImageBgPageInner() {
       <Header />
       <main className="w-full">
         <div className="max-w-[1920px] mx-auto px-4 sm:px-8 md:px-[50px] py-8 md:py-12">
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 md:gap-6 min-h-[calc(100vh-200px)]">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 md:gap-6">
             {/* Left Column - Controls */}
-            <div className="lg:col-span-4 flex flex-col min-w-0">
-              <div className="bg-[#1A1A1A] rounded-[20px] pt-[10px] pb-6 px-4 sm:px-6 border-b border-gray-400/30 h-fit w-full min-w-0">
+            <div className="lg:col-span-4 flex flex-col min-w-0 overflow-hidden">
+              <div className="bg-[#1A1A1A] rounded-[20px] pt-[10px] pb-6 px-4 sm:px-6 border-b border-gray-400/30 w-full min-w-0">
                 <h1 className="block text-lg sm:text-xl font-medium text-white mb-[15px] pb-[10px] border-b border-gray-400/30 -mx-4 sm:-mx-6 px-4 sm:px-6">Kling Motion Control</h1>
                 
-                {/* Motion Control Preview Card */}
-                <div className="bg-[#2a2a2a] rounded-[25px] p-4 sm:p-6 mb-4 sm:mb-6 aspect-[450/260] overflow-hidden w-full min-w-0 relative">
+                {/* Motion Control Preview - tỉ lệ cố định, không tràn */}
+                <div className="bg-[#2a2a2a] rounded-[20px] mb-4 sm:mb-6 w-full overflow-hidden relative" style={{ aspectRatio: '450/260' }}>
                   <video
                     src="/nhayvoinentuanh.mp4"
                     autoPlay
@@ -396,44 +415,73 @@ function DanceImageBgPageInner() {
                   />
                 </div>
                 
-                {/* Upload Areas - Horizontal */}
-                <div className="w-full min-w-0 mb-4 sm:mb-6">
-                  <div className="grid grid-cols-2 gap-2 sm:gap-4 min-w-0">
-                    <div className="bg-[#252525] rounded-[20px] p-2 sm:p-4 text-center flex flex-col items-center justify-center aspect-3/4 min-h-0 overflow-hidden min-w-0 shrink-0">
-                    <Video className="text-white mx-auto mb-1 sm:mb-2 shrink-0" style={{ width: 'clamp(1.25rem, 5vw, 2rem)', height: 'clamp(1.25rem, 5vw, 2rem)' }} />
-                    <input
-                      type="file"
-                      accept="video/*"
-                      onChange={handleVideoUpload}
-                      className="hidden"
-                      id="video-upload"
-                    />
-                    <label
-                      htmlFor="video-upload"
-                      className="cursor-pointer w-full px-1"
-                    >
-                      <div className="text-white font-semibold mb-0.5 sm:mb-1 break-words leading-tight" style={{ fontSize: 'clamp(0.625rem, 3vw, 0.875rem)' }}>Thêm video ở đây</div>
-                      <div className="text-gray-400 break-words leading-tight" style={{ fontSize: 'clamp(0.5rem, 2.5vw, 0.75rem)' }}>Độ dài từ 3 - 30s</div>
+                {/* Upload: 2 ô cố định tỉ lệ, không conflict min-height + aspect */}
+                <div className="mb-4 sm:mb-6 w-full min-w-0">
+                  <div className="grid grid-cols-2 gap-3 sm:gap-4 w-full">
+                    {/* Video */}
+                    <label htmlFor="video-upload" className="cursor-pointer block w-full min-w-0">
+                      <div className="rounded-[20px] w-full overflow-hidden relative bg-[#252525] border border-transparent transition-colors" style={{ aspectRatio: '4/3' }}>
+                        <input
+                          type="file"
+                          accept="video/*"
+                          onChange={handleVideoUpload}
+                          className="hidden"
+                          id="video-upload"
+                        />
+                        {videoFile && videoPreviewUrl ? (
+                          <>
+                            <video
+                              src={videoPreviewUrl}
+                              className="absolute inset-0 w-full h-full object-cover"
+                              muted
+                              playsInline
+                              preload="metadata"
+                            />
+                            <div className="absolute top-2 right-2 bg-black/70 text-white text-xs px-2 py-1 rounded-md truncate max-w-[80%]">
+                              {truncateFileName(videoFile.name, 12)}
+                            </div>
+                            <div className="absolute bottom-2 left-2 right-2 text-white/90 text-xs">Đã chọn • Bấm để đổi</div>
+                          </>
+                        ) : (
+                          <div className="absolute inset-0 flex flex-col items-center justify-center p-3 sm:p-4 text-center">
+                            <Video className="text-white mx-auto mb-1.5 sm:mb-2 shrink-0 w-8 h-8 sm:w-10 sm:h-10" />
+                            <div className="text-white font-semibold text-sm sm:text-base">Tải lên video</div>
+                            <div className="text-gray-400 text-xs mt-0.5">3–30s</div>
+                          </div>
+                        )}
+                      </div>
                     </label>
-                  </div>
-                  
-                  <div className="bg-[#252525] rounded-[20px] p-2 sm:p-4 text-center flex flex-col items-center justify-center aspect-3/4 min-h-0 overflow-hidden min-w-0 flex-shrink-0">
-                    <ImageIcon className="text-white mx-auto mb-1 sm:mb-2 shrink-0" style={{ width: 'clamp(1.25rem, 5vw, 2rem)', height: 'clamp(1.25rem, 5vw, 2rem)' }} />
-                    <input
-                      type="file"
-                      accept="image/*"
-                      onChange={handleImageUpload}
-                      className="hidden"
-                      id="image-upload"
-                    />
-                    <label
-                      htmlFor="image-upload"
-                      className="cursor-pointer w-full px-1"
-                    >
-                      <div className="text-white font-semibold mb-0.5 sm:mb-1 break-words leading-tight" style={{ fontSize: 'clamp(0.625rem, 3vw, 0.875rem)' }}>Thêm ảnh ở đây</div>
-                      <div className="text-gray-400 break-words leading-tight" style={{ fontSize: 'clamp(0.5rem, 2.5vw, 0.75rem)' }}>Nên cho ảnh rõ nét mặt và cơ thể</div>
+                    {/* Ảnh */}
+                    <label htmlFor="image-upload" className="cursor-pointer block w-full min-w-0">
+                      <div className="rounded-[20px] w-full overflow-hidden relative bg-[#252525] border border-transparent transition-colors" style={{ aspectRatio: '4/3' }}>
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={handleImageUpload}
+                          className="hidden"
+                          id="image-upload"
+                        />
+                        {imageFile && previewUrl ? (
+                          <>
+                            <img
+                              src={previewUrl}
+                              alt="Preview"
+                              className="absolute inset-0 w-full h-full object-cover"
+                            />
+                            <div className="absolute top-2 right-2 bg-black/70 text-white text-xs px-2 py-1 rounded-md truncate max-w-[80%]">
+                              {truncateFileName(imageFile.name, 12)}
+                            </div>
+                            <div className="absolute bottom-2 left-2 right-2 text-white/90 text-xs">Đã chọn • Bấm để đổi</div>
+                          </>
+                        ) : (
+                          <div className="absolute inset-0 flex flex-col items-center justify-center p-3 sm:p-4 text-center">
+                            <ImageIcon className="text-white mx-auto mb-1.5 sm:mb-2 shrink-0 w-8 h-8 sm:w-10 sm:h-10" />
+                            <div className="text-white font-semibold text-sm sm:text-base">Tải lên ảnh</div>
+                            <div className="text-gray-400 text-xs mt-0.5">Chọn từ máy tính</div>
+                          </div>
+                        )}
+                      </div>
                     </label>
-                    </div>
                   </div>
                 </div>
 
@@ -552,34 +600,19 @@ function DanceImageBgPageInner() {
                   </p>
                 </div>
 
-                {/* Advanced Mode */}
-                <div className="mb-4 sm:mb-6">
-                  <button
-                    onClick={() => setIsAdvancedOpen(!isAdvancedOpen)}
-                    className={`w-full flex items-center justify-between rounded-lg px-3 sm:px-4 py-2 transition-all overflow-hidden min-w-0 ${
-                      isAdvancedOpen ? 'bg-[#1A1A1A]' : 'bg-[#1A1A1A] hover:bg-[#3a3a3a]'
-                    }`}
-                  >
-                    <span className="text-white break-words flex-1 text-left" style={{ fontSize: 'clamp(0.625rem, 3vw, 0.875rem)' }}>Chế độ nâng cao</span>
-                    <ChevronDown className={`text-gray-400 transition-transform shrink-0 ml-2 ${isAdvancedOpen ? 'rotate-180' : ''}`} style={{ width: 'clamp(0.625rem, 3vw, 1rem)', height: 'clamp(0.625rem, 3vw, 1rem)' }} />
-                  </button>
-                  
-                  {/* Advanced Mode Panel */}
-                  {isAdvancedOpen && (
-                    <div className="mt-4 bg-[#2a2a2a] rounded-[20px] p-3 sm:p-4 overflow-hidden">
-                      <div className="text-white font-semibold mb-2 break-words" style={{ fontSize: 'clamp(0.625rem, 3vw, 0.875rem)' }}>Prompt</div>
-                      <p className="text-white mb-3 break-words leading-tight" style={{ fontSize: 'clamp(0.625rem, 3vw, 0.875rem)' }}>
-                        Bạn có thể miêu tả thêm cho video như nền hay đồ vật hay chi tiết của người để thêm sinh động.
-                      </p>
-                      <textarea
-                        value={prompt}
-                        onChange={(e) => setPrompt(e.target.value)}
-                        placeholder="Nhập prompt của bạn..."
-                        className="w-full bg-[#1a1a1a] text-white rounded-lg px-3 sm:px-4 py-2 sm:py-3 min-h-[100px] sm:min-h-[120px] focus:outline-none resize-none break-words"
-                        style={{ fontSize: 'clamp(0.625rem, 3vw, 0.875rem)' }}
-                      />
-                    </div>
-                  )}
+                {/* Prompt - luôn hiện */}
+                <div className="mb-4 sm:mb-6 bg-[#2a2a2a] rounded-[20px] p-3 sm:p-4 overflow-hidden">
+                  <div className="text-white font-semibold mb-2 break-words" style={{ fontSize: 'clamp(0.625rem, 3vw, 0.875rem)' }}>Prompt</div>
+                  <p className="text-white mb-3 break-words leading-tight" style={{ fontSize: 'clamp(0.625rem, 3vw, 0.875rem)' }}>
+                    Bạn có thể miêu tả thêm cho video như nền hay đồ vật hay chi tiết của người để thêm sinh động.
+                  </p>
+                  <textarea
+                    value={prompt}
+                    onChange={(e) => setPrompt(e.target.value)}
+                    placeholder="Nhập prompt của bạn..."
+                    className="w-full bg-[#1a1a1a] text-white rounded-lg px-3 sm:px-4 py-2 sm:py-3 min-h-[100px] sm:min-h-[120px] focus:outline-none resize-none break-words"
+                    style={{ fontSize: 'clamp(0.625rem, 3vw, 0.875rem)' }}
+                  />
                 </div>
 
                 {/* Create Button */}
